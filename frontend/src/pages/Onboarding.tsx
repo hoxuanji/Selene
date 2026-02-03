@@ -48,7 +48,7 @@ export const Onboarding: React.FC = () => {
           <div className="grid grid-2">
             <div className="card">
               <div className="badge">Welcome</div>
-              <h1 style={{ margin: '16px 0 8px 0' }}>🌙 Selene</h1>
+              <h1 style={{ margin: '16px 0 8px 0' }}>🌙 Elaris</h1>
               <p style={{ color: '#6a6b76', marginTop: 0 }}>
                 A calm, data-aware space for tracking your cycle and spotting
                 patterns.

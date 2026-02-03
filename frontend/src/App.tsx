@@ -75,7 +75,7 @@ const Shell: React.FC<{ children: React.ReactNode }> = ({ children }) => (
     <header className="topbar">
       <div className="topbar-inner">
         <div className="brand">
-          <span>🌙 Selene</span>
+          <span>🌙 Elaris</span>
           <span className="brand-badge">Health Companion</span>
         </div>
         <nav className="nav">
