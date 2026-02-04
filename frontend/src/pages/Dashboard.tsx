@@ -1,7 +1,10 @@
 import React, { useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { usePeriodStore } from '../store';
 import { PredictionCard } from '../components/PredictionCard';
 import { Calendar } from '../components/Calendar';
+import { PhaseInsights } from '../components/PhaseInsights';
+import { getPhase } from '../utils/phaseEngine';
 
 export const Dashboard: React.FC = () => {
   const {
@@ -14,20 +17,66 @@ export const Dashboard: React.FC = () => {
     addPeriodToStore,
     removePeriod,
     profile,
-    setProfile
+    setProfile,
+    dailyLogs,
+    loadDailyLogsFromDB
   } = usePeriodStore();
 
   useEffect(() => {
     loadPeriodsFromDB();
+    loadDailyLogsFromDB();
   }, []);
 
+  const toLocalDateString = (date: Date) => {
+    const year = date.getFullYear();
+    const month = `${date.getMonth() + 1}`.padStart(2, '0');
+    const day = `${date.getDate()}`.padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const handleStartToday = async () => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = toLocalDateString(new Date());
     await addPeriodToStore(today);
   };
 
   const lastPeriod = useMemo(() => periods[0], [periods]);
   const lastTenDates = useMemo(() => periods.slice(0, 10), [periods]);
+  const averageCycleLength = useMemo(() => {
+    if (periods.length < 2) return null;
+    const sorted = [...periods].sort();
+    const cycles: number[] = [];
+    for (let i = 1; i < sorted.length; i += 1) {
+      const prev = new Date(sorted[i - 1]).getTime();
+      const curr = new Date(sorted[i]).getTime();
+      cycles.push(Math.round((curr - prev) / (1000 * 60 * 60 * 24)));
+    }
+    if (!cycles.length) return null;
+    return Math.round(cycles.reduce((a, b) => a + b, 0) / cycles.length);
+  }, [periods]);
+
+  const todayLog = useMemo(() => {
+    const today = toLocalDateString(new Date());
+    return dailyLogs.find((log) => log.date === today) ?? null;
+  }, [dailyLogs]);
+
+  const currentPhase = useMemo(() => {
+    if (!predictedRange?.predictedOvulationDate && !todayLog && !lastPeriod) return null;
+    return getPhase({
+      lastPeriodDate: lastPeriod,
+      predictedOvulationDate: predictedRange?.predictedOvulationDate,
+      todayLog,
+      averageCycleLength
+    });
+  }, [predictedRange, todayLog, lastPeriod, averageCycleLength]);
+
+  const needsCheckinPrompt = useMemo(() => {
+    if (!dailyLogs.length) return true;
+    const latestLog = dailyLogs[0];
+    const diffDays = Math.round(
+      (Date.now() - new Date(latestLog.date).getTime()) / (1000 * 60 * 60 * 24)
+    );
+    return diffDays >= 3;
+  }, [dailyLogs]);
 
   const cycleAlert = useMemo(() => {
     if (periods.length < profile.minCyclesForAlerts) return null;
@@ -125,6 +174,14 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {error && <div className="alert">⚠️ {error}</div>}
+      {needsCheckinPrompt && (
+        <div className="alert" style={{ justifyContent: 'space-between' }}>
+          <span>Quick check-in? Takes 10 seconds.</span>
+          <Link className="btn btn-ghost" to="/daily-log">
+            Log now
+          </Link>
+        </div>
+      )}
       {cycleAlert && <div className="alert">🧠 {cycleAlert}</div>}
 
       <div className="grid grid-2" style={{ marginTop: 20 }}>
@@ -145,7 +202,20 @@ export const Dashboard: React.FC = () => {
           periods={periods}
           periodEntries={periodEntries}
           predictedRange={predictedRange}
+          dailyLogs={dailyLogs}
+          predictedOvulationDate={predictedRange?.predictedOvulationDate}
+          lastPeriodDate={lastPeriod}
           onDateAction={handleCalendarAction}
+        />
+      </div>
+
+      <div style={{ marginTop: 24 }}>
+        <PhaseInsights
+          phase={currentPhase}
+          predictedOvulationDate={predictedRange?.predictedOvulationDate}
+          ovulationSignal={predictedRange?.ovulationSignal}
+          periods={periods}
+          dailyLogs={dailyLogs}
         />
       </div>
 

@@ -34,6 +34,10 @@ export const PredictionCard: React.FC<PredictionCardProps> = ({ predictedRange, 
   };
 
   const confidence = Math.round(predictedRange.confidence * 100);
+  const baseConfidence =
+    typeof predictedRange.baseConfidence === 'number'
+      ? Math.round(predictedRange.baseConfidence * 100)
+      : null;
 
   return (
     <div className="card">
@@ -54,6 +58,11 @@ export const PredictionCard: React.FC<PredictionCardProps> = ({ predictedRange, 
         <div style={{ marginTop: '10px' }}>
           <div style={{ fontSize: '12px', color: '#6a6b76', marginBottom: '6px' }}>
             Confidence: <strong>{confidence}%</strong>
+            {baseConfidence !== null && baseConfidence !== confidence && (
+              <span style={{ marginLeft: 8, color: '#6a6b76' }}>
+                (Base {baseConfidence}%)
+              </span>
+            )}
           </div>
           <div style={confidenceBarStyle}>
             <div
@@ -65,6 +74,11 @@ export const PredictionCard: React.FC<PredictionCardProps> = ({ predictedRange, 
               }}
             ></div>
           </div>
+          {predictedRange.adjustmentNote && (
+            <div style={{ marginTop: 8, fontSize: 12, color: '#6a6b76' }}>
+              {predictedRange.adjustmentNote}
+            </div>
+          )}
         </div>
       </div>
     </div>

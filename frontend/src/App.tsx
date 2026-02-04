@@ -9,6 +9,7 @@ import {
 import { Onboarding } from './pages/Onboarding';
 import { Dashboard } from './pages/Dashboard';
 import { History } from './pages/History';
+import { DailyLog } from './pages/DailyLog';
 import { getAllPeriods } from './db';
 
 function App() {
@@ -65,6 +66,14 @@ function App() {
             </Shell>
           }
         />
+        <Route
+          path="/daily-log"
+          element={
+            <Shell>
+              <DailyLog />
+            </Shell>
+          }
+        />
       </Routes>
     </BrowserRouter>
   );
@@ -94,6 +103,14 @@ const Shell: React.FC<{ children: React.ReactNode }> = ({ children }) => (
             }
           >
             History
+          </NavLink>
+          <NavLink
+            to="/daily-log"
+            className={({ isActive }) =>
+              `nav-link${isActive ? ' active' : ''}`
+            }
+          >
+            Daily Log
           </NavLink>
         </nav>
       </div>
