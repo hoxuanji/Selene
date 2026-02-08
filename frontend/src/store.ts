@@ -178,7 +178,7 @@ export const usePeriodStore = create<PeriodStore>((set, get) => ({
     set({ loading: true });
     try {
       const response = await axios.post(
-        `${API_BASE_URL}/predict`,
+        `${API_BASE_URL}/api/predict`,
         { dates: periods }
       );
       const basePrediction: PredictionRange = {
