@@ -283,6 +283,81 @@ export const Dashboard: React.FC = () => {
       )}
       {cycleAlert && <div className="alert">🧠 {cycleAlert}</div>}
 
+      {/* ===== Notification Settings ===== */}
+      <div className="card" style={{ marginTop: 16 }}>
+        <p className="section-title">🔔 Reminder Notifications</p>
+        {!notificationsSupported() ? (
+          <p style={{ color: '#6a6b76' }}>
+            Your browser does not support notifications.
+          </p>
+        ) : (
+          <>
+            <div className="notif-row">
+              <div>
+                <strong>
+                  {notifPrefs.enabled ? 'Reminders are on' : 'Reminders are off'}
+                </strong>
+                <p className="notif-desc">
+                  {notifPrefs.enabled
+                    ? `You'll get a gentle nudge if you haven't logged by ${formatHour(notifPrefs.reminderHour)}.`
+                    : 'Enable to receive a daily check-in reminder through your browser.'}
+                </p>
+              </div>
+              <button
+                className={`btn ${notifPrefs.enabled ? 'btn-ghost' : 'btn-primary'}`}
+                onClick={handleToggleNotifications}
+              >
+                {notifPrefs.enabled ? 'Turn off' : 'Turn on'}
+              </button>
+            </div>
+
+            {notifPermission === 'denied' && (
+              <div className="alert" style={{ marginTop: 12 }}>
+                ⚠️ Notifications are blocked by your browser. Please allow them
+                in your browser settings to enable reminders.
+              </div>
+            )}
+
+            {notifPrefs.enabled && notifPermission === 'granted' && (
+              <div style={{ marginTop: 16, display: 'flex', flexWrap: 'wrap', gap: 16 }}>
+                <label className="form-field" style={{ maxWidth: 220 }}>
+                  <span className="label-icon">⏰</span> Reminder time
+                  <select
+                    className="input"
+                    value={notifPrefs.reminderHour}
+                    onChange={(e) => handleReminderHourChange(Number(e.target.value))}
+                  >
+                    {Array.from({ length: 24 }, (_, h) => (
+                      <option key={h} value={h}>
+                        {formatHour(h)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <div className="notif-row" style={{ flex: 1, minWidth: 200 }}>
+                  <div>
+                    <strong>Cycle insights</strong>
+                    <p className="notif-desc">
+                      {notifPrefs.insightsEnabled
+                        ? 'Notify about period approaching, fertile window, ovulation signals, and more.'
+                        : 'Insight notifications are off.'}
+                    </p>
+                  </div>
+                  <button
+                    className={`btn ${notifPrefs.insightsEnabled ? 'btn-ghost' : 'btn-primary'}`}
+                    style={{ whiteSpace: 'nowrap' }}
+                    onClick={handleToggleInsights}
+                  >
+                    {notifPrefs.insightsEnabled ? 'Turn off' : 'Turn on'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
       <div className="grid grid-2" style={{ marginTop: 20 }}>
         <CycleDayCounter
           lastPeriodDate={lastPeriod}
@@ -674,80 +749,6 @@ export const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* ===== Notification Settings ===== */}
-      <div className="card" style={{ marginTop: 24 }}>
-        <p className="section-title">🔔 Reminder Notifications</p>
-        {!notificationsSupported() ? (
-          <p style={{ color: '#6a6b76' }}>
-            Your browser does not support notifications.
-          </p>
-        ) : (
-          <>
-            <div className="notif-row">
-              <div>
-                <strong>
-                  {notifPrefs.enabled ? 'Reminders are on' : 'Reminders are off'}
-                </strong>
-                <p className="notif-desc">
-                  {notifPrefs.enabled
-                    ? `You'll get a gentle nudge if you haven't logged by ${formatHour(notifPrefs.reminderHour)}.`
-                    : 'Enable to receive a daily check-in reminder through your browser.'}
-                </p>
-              </div>
-              <button
-                className={`btn ${notifPrefs.enabled ? 'btn-ghost' : 'btn-primary'}`}
-                onClick={handleToggleNotifications}
-              >
-                {notifPrefs.enabled ? 'Turn off' : 'Turn on'}
-              </button>
-            </div>
-
-            {notifPermission === 'denied' && (
-              <div className="alert" style={{ marginTop: 12 }}>
-                ⚠️ Notifications are blocked by your browser. Please allow them
-                in your browser settings to enable reminders.
-              </div>
-            )}
-
-            {notifPrefs.enabled && notifPermission === 'granted' && (
-              <div style={{ marginTop: 16, display: 'flex', flexWrap: 'wrap', gap: 16 }}>
-                <label className="form-field" style={{ maxWidth: 220 }}>
-                  <span className="label-icon">⏰</span> Reminder time
-                  <select
-                    className="input"
-                    value={notifPrefs.reminderHour}
-                    onChange={(e) => handleReminderHourChange(Number(e.target.value))}
-                  >
-                    {Array.from({ length: 24 }, (_, h) => (
-                      <option key={h} value={h}>
-                        {formatHour(h)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <div className="notif-row" style={{ flex: 1, minWidth: 200 }}>
-                  <div>
-                    <strong>Cycle insights</strong>
-                    <p className="notif-desc">
-                      {notifPrefs.insightsEnabled
-                        ? 'Notify about period approaching, fertile window, ovulation signals, and more.'
-                        : 'Insight notifications are off.'}
-                    </p>
-                  </div>
-                  <button
-                    className={`btn ${notifPrefs.insightsEnabled ? 'btn-ghost' : 'btn-primary'}`}
-                    style={{ whiteSpace: 'nowrap' }}
-                    onClick={handleToggleInsights}
-                  >
-                    {notifPrefs.insightsEnabled ? 'Turn off' : 'Turn on'}
-                  </button>
-                </div>
-              </div>
-            )}
-          </>
-        )}
-      </div>
     </div>
   );
 };
