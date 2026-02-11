@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { usePeriodStore } from '../store';
 import { PredictionCard } from '../components/PredictionCard';
@@ -13,6 +13,7 @@ import {
   requestPermission,
   getNotificationPrefs,
   saveNotificationPrefs,
+  checkInsightNotifications,
   type NotificationPrefs,
 } from '../utils/notifications';
 
@@ -64,6 +65,14 @@ export const Dashboard: React.FC = () => {
     },
     [notifPrefs]
   );
+
+  const handleToggleInsights = useCallback(() => {
+    const next: NotificationPrefs = { ...notifPrefs, insightsEnabled: !notifPrefs.insightsEnabled };
+    saveNotificationPrefs(next);
+    setNotifPrefs(next);
+  }, [notifPrefs]);
+
+  const previousPhaseRef = useRef<string | null>(null);
 
   const toLocalDateString = (date: Date) => {
     const year = date.getFullYear();
@@ -189,6 +198,18 @@ export const Dashboard: React.FC = () => {
     return null;
   }, [periods, profile]);
 
+  const stressSleepWarning = useMemo(() => {
+    const recent = [...dailyLogs]
+      .sort((a, b) => (a.date < b.date ? -1 : 1))
+      .slice(-5);
+    const hasHighStress = recent.some((log) => log.stress === 'high');
+    const hasPoorSleep = recent.some((log) => log.sleepBand === 'lt6');
+    if (hasHighStress || hasPoorSleep) {
+      return 'Recent high stress or poor sleep may affect your cycle timing.';
+    }
+    return null;
+  }, [dailyLogs]);
+
   const fertileWindow = useMemo(
     () => computeFertileWindow(
       predictedRange?.predictedOvulationDate,
@@ -202,6 +223,32 @@ export const Dashboard: React.FC = () => {
     () => new Set(fertileWindow?.dates ?? []),
     [fertileWindow]
   );
+
+  // Fire insight notifications when data changes
+  useEffect(() => {
+    if (!notifPrefs.enabled || !notifPrefs.insightsEnabled) return;
+    if (!notificationsSupported() || getPermission() !== 'granted') return;
+
+    const prevPhase = previousPhaseRef.current;
+    previousPhaseRef.current = currentPhase;
+
+    checkInsightNotifications({
+      periods,
+      predictedDate: predictedRange?.predictedDate ?? null,
+      predictedOvulationDate: predictedRange?.predictedOvulationDate ?? null,
+      fertileStart: fertileWindow?.start ?? null,
+      fertileEnd: fertileWindow?.end ?? null,
+      currentPhase: currentPhase ?? null,
+      previousPhase: prevPhase,
+      ovulationDetected: predictedRange?.ovulationSignal?.ovulationDetected ?? false,
+      ovulationReason: predictedRange?.ovulationSignal?.reason ?? null,
+      cycleAlert: cycleAlert ?? null,
+      stressSleepWarning: stressSleepWarning ?? null,
+    });
+  }, [
+    periods, predictedRange, fertileWindow, currentPhase,
+    cycleAlert, stressSleepWarning, notifPrefs
+  ]);
 
   const handleCalendarAction = async (date: string, entryId?: number) => {
     if (entryId) {
@@ -663,20 +710,40 @@ export const Dashboard: React.FC = () => {
             )}
 
             {notifPrefs.enabled && notifPermission === 'granted' && (
-              <label className="form-field" style={{ marginTop: 16, maxWidth: 220 }}>
-                <span className="label-icon">⏰</span> Reminder time
-                <select
-                  className="input"
-                  value={notifPrefs.reminderHour}
-                  onChange={(e) => handleReminderHourChange(Number(e.target.value))}
-                >
-                  {Array.from({ length: 24 }, (_, h) => (
-                    <option key={h} value={h}>
-                      {formatHour(h)}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <div style={{ marginTop: 16, display: 'flex', flexWrap: 'wrap', gap: 16 }}>
+                <label className="form-field" style={{ maxWidth: 220 }}>
+                  <span className="label-icon">⏰</span> Reminder time
+                  <select
+                    className="input"
+                    value={notifPrefs.reminderHour}
+                    onChange={(e) => handleReminderHourChange(Number(e.target.value))}
+                  >
+                    {Array.from({ length: 24 }, (_, h) => (
+                      <option key={h} value={h}>
+                        {formatHour(h)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <div className="notif-row" style={{ flex: 1, minWidth: 200 }}>
+                  <div>
+                    <strong>Cycle insights</strong>
+                    <p className="notif-desc">
+                      {notifPrefs.insightsEnabled
+                        ? 'Notify about period approaching, fertile window, ovulation signals, and more.'
+                        : 'Insight notifications are off.'}
+                    </p>
+                  </div>
+                  <button
+                    className={`btn ${notifPrefs.insightsEnabled ? 'btn-ghost' : 'btn-primary'}`}
+                    style={{ whiteSpace: 'nowrap' }}
+                    onClick={handleToggleInsights}
+                  >
+                    {notifPrefs.insightsEnabled ? 'Turn off' : 'Turn on'}
+                  </button>
+                </div>
+              </div>
             )}
           </>
         )}
