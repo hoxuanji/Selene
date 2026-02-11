@@ -4,6 +4,8 @@ import { usePeriodStore } from '../store';
 import { PredictionCard } from '../components/PredictionCard';
 import { Calendar } from '../components/Calendar';
 import { PhaseInsights } from '../components/PhaseInsights';
+import { CycleDayCounter } from '../components/CycleDayCounter';
+import { FertileWindowCard, computeFertileWindow } from '../components/FertileWindow';
 import { getPhase } from '../utils/phaseEngine';
 
 export const Dashboard: React.FC = () => {
@@ -151,6 +153,20 @@ export const Dashboard: React.FC = () => {
     return null;
   }, [periods, profile]);
 
+  const fertileWindow = useMemo(
+    () => computeFertileWindow(
+      predictedRange?.predictedOvulationDate,
+      lastPeriod,
+      averageCycleLength
+    ),
+    [predictedRange?.predictedOvulationDate, lastPeriod, averageCycleLength]
+  );
+
+  const fertileWindowDates = useMemo(
+    () => new Set(fertileWindow?.dates ?? []),
+    [fertileWindow]
+  );
+
   const handleCalendarAction = async (date: string, entryId?: number) => {
     if (entryId) {
       if (window.confirm(`Delete period entry on ${date}?`)) {
@@ -185,7 +201,20 @@ export const Dashboard: React.FC = () => {
       {cycleAlert && <div className="alert">🧠 {cycleAlert}</div>}
 
       <div className="grid grid-2" style={{ marginTop: 20 }}>
+        <CycleDayCounter
+          lastPeriodDate={lastPeriod}
+          averageCycleLength={averageCycleLength}
+          currentPhase={currentPhase}
+        />
         <PredictionCard predictedRange={predictedRange} loading={loading} />
+      </div>
+
+      <div className="grid grid-2" style={{ marginTop: 20 }}>
+        <FertileWindowCard
+          predictedOvulationDate={predictedRange?.predictedOvulationDate}
+          lastPeriodDate={lastPeriod}
+          averageCycleLength={averageCycleLength}
+        />
         <div className="card">
           <p className="section-title">Latest recorded</p>
           <h2 style={{ margin: 0 }}>
@@ -205,6 +234,8 @@ export const Dashboard: React.FC = () => {
           dailyLogs={dailyLogs}
           predictedOvulationDate={predictedRange?.predictedOvulationDate}
           lastPeriodDate={lastPeriod}
+          fertileWindowDates={fertileWindowDates}
+          fertileOvulationDate={fertileWindow?.ovulationDate}
           onDateAction={handleCalendarAction}
         />
       </div>

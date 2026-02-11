@@ -9,6 +9,8 @@ interface CalendarProps {
   dailyLogs?: DailyLog[];
   predictedOvulationDate?: string | null;
   lastPeriodDate?: string | null;
+  fertileWindowDates?: Set<string>;
+  fertileOvulationDate?: string | null;
   onDateAction?: (date: string, entryId?: number) => void;
 }
 
@@ -19,6 +21,8 @@ export const Calendar: React.FC<CalendarProps> = ({
   dailyLogs = [],
   predictedOvulationDate,
   lastPeriodDate,
+  fertileWindowDates = new Set(),
+  fertileOvulationDate,
   onDateAction
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -118,8 +122,13 @@ export const Calendar: React.FC<CalendarProps> = ({
 
     const entryId = periodIdMap.get(dateString);
     const isToday = date.toDateString() === new Date().toDateString();
+    const dateISO = toLocalDateString(date);
+    const isFertile = fertileWindowDates.has(dateISO);
+    const isFertileOvulation = dateISO === fertileOvulationDate;
     const ovulationTooltip =
-      logForDate?.mucus === 'egg_white'
+      isFertileOvulation
+        ? 'Estimated Ovulation Day'
+        : logForDate?.mucus === 'egg_white'
         ? 'Likely Ovulation Day (from mucus log)'
         : '';
 
@@ -136,12 +145,14 @@ export const Calendar: React.FC<CalendarProps> = ({
           phase ? `phase-${phase}` : '',
           isPeriod ? 'period' : '',
           !isPeriod && isPredicted ? 'predicted' : '',
+          !isPeriod && !isPredicted && isFertileOvulation ? 'fertile-ovulation' : '',
+          !isPeriod && !isPredicted && isFertile && !isFertileOvulation ? 'fertile' : '',
           isToday ? 'today' : ''
         ].join(' ')}
         title={
           isPeriod
             ? 'Remove period entry'
-            : ovulationTooltip || 'Add period entry'
+            : ovulationTooltip || (isFertile ? 'Fertile window' : 'Add period entry')
         }
       >
         {day}
@@ -198,6 +209,14 @@ export const Calendar: React.FC<CalendarProps> = ({
         <span>
           <span className="legend-swatch" style={{ background: '#efe1ff' }}></span>
           Luteal
+        </span>
+        <span>
+          <span className="legend-swatch" style={{ background: '#e8f5e9', border: '2px solid #66bb6a' }}></span>
+          Fertile
+        </span>
+        <span>
+          <span className="legend-swatch" style={{ background: '#c8e6c9', border: '2px solid #43a047' }}></span>
+          Ovulation
         </span>
         <span>Click a date to add or remove an entry</span>
       </div>
