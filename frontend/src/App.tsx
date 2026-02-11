@@ -10,7 +10,8 @@ import { Onboarding } from './pages/Onboarding';
 import { Dashboard } from './pages/Dashboard';
 import { History } from './pages/History';
 import { DailyLog } from './pages/DailyLog';
-import { getAllPeriods } from './db';
+import { getAllPeriods, getAllDailyLogs } from './db';
+import { startReminderCheck, getNotificationPrefs } from './utils/notifications';
 
 function App() {
   const [hasData, setHasData] = useState<boolean | null>(null);
@@ -20,6 +21,36 @@ function App() {
     const onFocus = () => checkData();
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
+  }, []);
+
+  // Start daily check-in reminder notifications
+  useEffect(() => {
+    const prefs = getNotificationPrefs();
+    if (!prefs.enabled) return;
+
+    const toLocal = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+    const cleanup = startReminderCheck(() => {
+      // Synchronously check localStorage cache for today's log
+      try {
+        const today = toLocal(new Date());
+        const cached = localStorage.getItem('last_logged_date');
+        return cached === today;
+      } catch {
+        return false;
+      }
+    });
+
+    // Also do an async check and cache the result
+    getAllDailyLogs().then((logs) => {
+      const today = toLocal(new Date());
+      if (logs.some((l) => l.date === today)) {
+        localStorage.setItem('last_logged_date', today);
+      }
+    });
+
+    return cleanup;
   }, []);
 
   const checkData = async () => {

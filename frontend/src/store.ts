@@ -250,6 +250,12 @@ export const usePeriodStore = create<PeriodStore>((set, get) => ({
       await upsertDailyLogDB(log);
       await get().loadDailyLogsFromDB();
       set({ dailyLogsError: null });
+      // Cache today's log for the notification reminder check
+      const today = new Date();
+      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      if (log.date === todayStr) {
+        localStorage.setItem('last_logged_date', todayStr);
+      }
       if (get().periods.length >= 3) {
         await get().fetchPrediction();
       }

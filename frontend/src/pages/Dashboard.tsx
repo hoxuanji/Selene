@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { usePeriodStore } from '../store';
 import { PredictionCard } from '../components/PredictionCard';
@@ -7,6 +7,14 @@ import { PhaseInsights } from '../components/PhaseInsights';
 import { CycleDayCounter } from '../components/CycleDayCounter';
 import { FertileWindowCard, computeFertileWindow } from '../components/FertileWindow';
 import { getPhase } from '../utils/phaseEngine';
+import {
+  notificationsSupported,
+  getPermission,
+  requestPermission,
+  getNotificationPrefs,
+  saveNotificationPrefs,
+  type NotificationPrefs,
+} from '../utils/notifications';
 
 export const Dashboard: React.FC = () => {
   const {
@@ -28,6 +36,34 @@ export const Dashboard: React.FC = () => {
     loadPeriodsFromDB();
     loadDailyLogsFromDB();
   }, []);
+
+  /* ---- Notification settings ---- */
+  const [notifPrefs, setNotifPrefs] = useState<NotificationPrefs>(getNotificationPrefs);
+  const [notifPermission, setNotifPermission] = useState<NotificationPermission>(getPermission);
+
+  const handleToggleNotifications = useCallback(async () => {
+    if (!notificationsSupported()) return;
+
+    if (!notifPrefs.enabled) {
+      // Turning ON → request permission first
+      const perm = await requestPermission();
+      setNotifPermission(perm);
+      if (perm !== 'granted') return;
+    }
+
+    const next: NotificationPrefs = { ...notifPrefs, enabled: !notifPrefs.enabled };
+    saveNotificationPrefs(next);
+    setNotifPrefs(next);
+  }, [notifPrefs]);
+
+  const handleReminderHourChange = useCallback(
+    (hour: number) => {
+      const next: NotificationPrefs = { ...notifPrefs, reminderHour: hour };
+      saveNotificationPrefs(next);
+      setNotifPrefs(next);
+    },
+    [notifPrefs]
+  );
 
   const toLocalDateString = (date: Date) => {
     const year = date.getFullYear();
@@ -590,6 +626,67 @@ export const Dashboard: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* ===== Notification Settings ===== */}
+      <div className="card" style={{ marginTop: 24 }}>
+        <p className="section-title">🔔 Reminder Notifications</p>
+        {!notificationsSupported() ? (
+          <p style={{ color: '#6a6b76' }}>
+            Your browser does not support notifications.
+          </p>
+        ) : (
+          <>
+            <div className="notif-row">
+              <div>
+                <strong>
+                  {notifPrefs.enabled ? 'Reminders are on' : 'Reminders are off'}
+                </strong>
+                <p className="notif-desc">
+                  {notifPrefs.enabled
+                    ? `You'll get a gentle nudge if you haven't logged by ${formatHour(notifPrefs.reminderHour)}.`
+                    : 'Enable to receive a daily check-in reminder through your browser.'}
+                </p>
+              </div>
+              <button
+                className={`btn ${notifPrefs.enabled ? 'btn-ghost' : 'btn-primary'}`}
+                onClick={handleToggleNotifications}
+              >
+                {notifPrefs.enabled ? 'Turn off' : 'Turn on'}
+              </button>
+            </div>
+
+            {notifPermission === 'denied' && (
+              <div className="alert" style={{ marginTop: 12 }}>
+                ⚠️ Notifications are blocked by your browser. Please allow them
+                in your browser settings to enable reminders.
+              </div>
+            )}
+
+            {notifPrefs.enabled && notifPermission === 'granted' && (
+              <label className="form-field" style={{ marginTop: 16, maxWidth: 220 }}>
+                <span className="label-icon">⏰</span> Reminder time
+                <select
+                  className="input"
+                  value={notifPrefs.reminderHour}
+                  onChange={(e) => handleReminderHourChange(Number(e.target.value))}
+                >
+                  {Array.from({ length: 24 }, (_, h) => (
+                    <option key={h} value={h}>
+                      {formatHour(h)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 };
+
+function formatHour(h: number): string {
+  const suffix = h >= 12 ? 'PM' : 'AM';
+  const display = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${display}:00 ${suffix}`;
+}
