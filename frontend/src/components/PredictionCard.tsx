@@ -30,6 +30,11 @@ export const PredictionCard: React.FC<PredictionCardProps> = ({ predictedRange, 
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  };
+
+  const formatDateShort = (dateStr: string) => {
+    const date = new Date(dateStr);
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
@@ -43,17 +48,15 @@ export const PredictionCard: React.FC<PredictionCardProps> = ({ predictedRange, 
     <div className="card">
       <p className="section-title">Next prediction</p>
       <div style={{ marginTop: '12px' }}>
-        <p style={{ fontSize: '16px', marginBottom: '10px' }}>
+        <p style={{ fontSize: '20px', marginBottom: '4px', textAlign: 'center' }}>
           <strong>
-            Likely between{' '}
             <span style={{ color: '#e91e63' }}>
-              {formatDate(predictedRange.earliest)}
-            </span>
-            {' '}and{' '}
-            <span style={{ color: '#e91e63' }}>
-              {formatDate(predictedRange.latest)}
+              {formatDate(predictedRange.predictedDate)}
             </span>
           </strong>
+        </p>
+        <p style={{ fontSize: '12px', color: '#6a6b76', textAlign: 'center', margin: '4px 0 12px' }}>
+          ±1 day ({formatDateShort(predictedRange.earliest)} – {formatDateShort(predictedRange.latest)})
         </p>
         <div style={{ marginTop: '10px' }}>
           <div style={{ fontSize: '12px', color: '#6a6b76', marginBottom: '6px' }}>

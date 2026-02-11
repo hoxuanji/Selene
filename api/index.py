@@ -23,6 +23,7 @@ class PredictRequest(BaseModel):
 
 
 class PredictResponse(BaseModel):
+    predicted_date: str
     earliest: str
     latest: str
     confidence: float
@@ -53,13 +54,13 @@ def weighted_average(cycles: List[int]) -> float:
 
 def predict_range(dates: List[str]) -> tuple:
     """
-    Predict next period range.
-    Returns (earliest, latest, confidence)
+    Predict next period with an exact date and ±1 day range.
+    Returns (predicted_date, earliest, latest, confidence)
     """
     cycles = diff_between_dates(dates)
 
     if not cycles:
-        return None, None, 0.0
+        return None, None, None, 0.0
 
     avg_cycle = weighted_average(cycles)
     std_dev = float(np.std(cycles)) if len(cycles) > 1 else 0.0
@@ -67,14 +68,14 @@ def predict_range(dates: List[str]) -> tuple:
     sorted_dates = sorted([parse(d).date() for d in dates])
     last_date = sorted_dates[-1]
 
-    earliest_days = int(avg_cycle - std_dev) if std_dev > 0 else int(avg_cycle) - 2
-    latest_days = int(avg_cycle + std_dev) if std_dev > 0 else int(avg_cycle) + 2
+    # Predict exact date using the weighted average cycle length
+    predicted_days = round(avg_cycle)
+    predicted_days = max(20, min(40, predicted_days))
+    predicted_date = last_date + timedelta(days=predicted_days)
 
-    earliest_days = max(20, earliest_days)
-    latest_days = min(40, latest_days)
-
-    earliest = (last_date + timedelta(days=earliest_days)).isoformat()
-    latest = (last_date + timedelta(days=latest_days)).isoformat()
+    # ±1 day window around the predicted date
+    earliest = (predicted_date - timedelta(days=1)).isoformat()
+    latest = (predicted_date + timedelta(days=1)).isoformat()
 
     if avg_cycle > 0:
         cv = (std_dev / avg_cycle) if std_dev > 0 else 0.0
@@ -82,14 +83,15 @@ def predict_range(dates: List[str]) -> tuple:
     else:
         confidence = 0.0
 
-    return earliest, latest, confidence
+    return predicted_date.isoformat(), earliest, latest, confidence
 
 
 @app.post("/api/predict", response_model=PredictResponse)
 async def predict(request: PredictRequest):
     """Predict next period dates."""
-    earliest, latest, confidence = predict_range(request.dates)
+    predicted_date, earliest, latest, confidence = predict_range(request.dates)
     return PredictResponse(
+        predicted_date=predicted_date or "",
         earliest=earliest or "",
         latest=latest or "",
         confidence=confidence,

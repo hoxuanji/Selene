@@ -13,6 +13,7 @@ import { adjustConfidence, adjustPredictionWindow } from './utils/confidenceAdju
 import { detectOvulationFromLogs, OvulationSignal } from './utils/ovulationSignals';
 
 export interface PredictionRange {
+  predictedDate: string;
   earliest: string;
   latest: string;
   confidence: number;
@@ -182,6 +183,7 @@ export const usePeriodStore = create<PeriodStore>((set, get) => ({
         { dates: periods }
       );
       const basePrediction: PredictionRange = {
+        predictedDate: response.data.predicted_date,
         earliest: response.data.earliest,
         latest: response.data.latest,
         confidence: response.data.confidence
@@ -267,6 +269,7 @@ const enhancePredictionWithLogs = (
   if (!dailyLogs.length) {
     return {
       ...basePrediction,
+      predictedDate: basePrediction.predictedDate,
       predictedOvulationDate
     };
   }
@@ -290,6 +293,7 @@ const enhancePredictionWithLogs = (
   );
 
   return {
+    predictedDate: basePrediction.predictedDate,
     earliest: adjustedWindow.earliest,
     latest: adjustedWindow.latest,
     confidence: adjustment.confidence,
