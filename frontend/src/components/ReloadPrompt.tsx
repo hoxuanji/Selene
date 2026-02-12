@@ -10,13 +10,13 @@ export const ReloadPrompt: React.FC = () => {
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
   } = useRegisterSW({
-    onRegisteredSW(swUrl, registration) {
+    onRegisteredSW(swUrl: string, registration: ServiceWorkerRegistration | undefined) {
       // Check for SW updates every hour
       if (registration) {
         setInterval(() => registration.update(), 60 * 60 * 1000);
       }
     },
-    onRegisterError(error) {
+    onRegisterError(error: any) {
       console.error('SW registration error', error);
     },
   });
