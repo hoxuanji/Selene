@@ -12,6 +12,8 @@ import { History } from './pages/History';
 import { DailyLog } from './pages/DailyLog';
 import { getAllPeriods, getAllDailyLogs } from './db';
 import { startReminderCheck, getNotificationPrefs } from './utils/notifications';
+import { InstallPrompt } from './components/InstallPrompt';
+import { ReloadPrompt } from './components/ReloadPrompt';
 
 function App() {
   const [hasData, setHasData] = useState<boolean | null>(null);
@@ -112,6 +114,8 @@ function App() {
 
 const Shell: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div className="app-shell">
+    <InstallPrompt />
+    <ReloadPrompt />
     <header className="topbar">
       <div className="topbar-inner">
         <div className="brand">
