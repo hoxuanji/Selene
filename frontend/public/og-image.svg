@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#e91e63"/>
+      <stop offset="100%" style="stop-color:#6c5ce7"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <!-- Moon -->
+  <circle cx="520" cy="280" r="140" fill="#fff" opacity="0.95"/>
+  <circle cx="580" cy="220" r="110" fill="url(#bg)"/>
+  <!-- Stars -->
+  <circle cx="650" cy="160" r="10" fill="#fff"/>
+  <circle cx="700" cy="220" r="6" fill="#fff" opacity="0.8"/>
+  <circle cx="620" cy="120" r="5" fill="#fff" opacity="0.6"/>
+  <!-- Text -->
+  <text x="600" y="490" text-anchor="middle" fill="#fff" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="64" font-weight="700">Selene</text>
+  <text x="600" y="540" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="26">Your private health companion</text>
+</svg>
