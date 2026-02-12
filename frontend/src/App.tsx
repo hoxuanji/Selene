@@ -6,6 +6,7 @@ import {
   Navigate,
   NavLink,
 } from 'react-router-dom';
+import { Analytics } from '@vercel/analytics/react';
 import { Onboarding } from './pages/Onboarding';
 import { Dashboard } from './pages/Dashboard';
 import { History } from './pages/History';
@@ -108,6 +109,7 @@ function App() {
           }
         />
       </Routes>
+      <Analytics />
     </BrowserRouter>
   );
 }
