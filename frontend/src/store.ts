@@ -11,6 +11,13 @@ import axios from 'axios';
 import { API_BASE_URL } from './api';
 import { adjustConfidence, adjustPredictionWindow } from './utils/confidenceAdjuster';
 import { detectOvulationFromLogs, OvulationSignal } from './utils/ovulationSignals';
+import {
+  getConsecutiveStreakLength,
+  isFutureDate,
+  isTodayOrPast,
+  isWithinRange,
+  todayLocalString
+} from './utils/validation';
 
 export interface PredictionRange {
   predictedDate: string;
@@ -59,7 +66,7 @@ interface PeriodStore {
   loadPeriodsFromDB: () => Promise<void>;
   addPeriodToStore: (date: string) => Promise<void>;
   fetchPrediction: () => Promise<void>;
-  removePeriod: (id: number) => Promise<void>;
+  removePeriod: (id: number, date?: string) => Promise<void>;
   setPeriods: (periods: string[]) => void;
   setError: (message: string | null) => void;
   setProfile: (profile: AlertProfile) => void;
@@ -163,6 +170,30 @@ export const usePeriodStore = create<PeriodStore>((set, get) => ({
 
   addPeriodToStore: async (date: string) => {
     try {
+      if (!isTodayOrPast(date)) {
+        set({ error: 'Period dates must be today or earlier.' });
+        return;
+      }
+
+      const predictedRange = get().predictedRange;
+      if (predictedRange && isFutureDate(date) && isWithinRange(date, predictedRange.earliest, predictedRange.latest)) {
+        set({ error: 'Cannot add health data to predicted dates.' });
+        return;
+      }
+
+      const existingDates = get().periodEntries.map((entry) => entry.startDate);
+      if (existingDates.includes(date)) {
+        set({ error: 'A period entry already exists for this date.' });
+        return;
+      }
+
+      const dateSet = new Set([...existingDates, date]);
+      const streakLength = getConsecutiveStreakLength(dateSet, date);
+      if (streakLength > 10) {
+        set({ error: 'Period length cannot be more than 10 days.' });
+        return;
+      }
+
       await addPeriod(date);
       await get().loadPeriodsFromDB();
       set({ error: null });
@@ -206,8 +237,12 @@ export const usePeriodStore = create<PeriodStore>((set, get) => ({
     }
   },
 
-  removePeriod: async (id: number) => {
+  removePeriod: async (id: number, date?: string) => {
     try {
+      if (date && isFutureDate(date)) {
+        set({ error: 'Future period entries cannot be deleted.' });
+        return;
+      }
       await deletePeriod(id);
       await get().loadPeriodsFromDB();
       set({ error: null });
@@ -247,12 +282,22 @@ export const usePeriodStore = create<PeriodStore>((set, get) => ({
 
   upsertDailyLog: async (log: DailyLog) => {
     try {
+      if (!isTodayOrPast(log.date)) {
+        set({ dailyLogsError: 'Symptoms can only be logged for past dates or today.' });
+        return;
+      }
+
+      const predictedRange = get().predictedRange;
+      if (predictedRange && isFutureDate(log.date) && isWithinRange(log.date, predictedRange.earliest, predictedRange.latest)) {
+        set({ dailyLogsError: 'Cannot add health data to predicted dates.' });
+        return;
+      }
+
       await upsertDailyLogDB(log);
       await get().loadDailyLogsFromDB();
       set({ dailyLogsError: null });
       // Cache today's log for the notification reminder check
-      const today = new Date();
-      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      const todayStr = todayLocalString();
       if (log.date === todayStr) {
         localStorage.setItem('last_logged_date', todayStr);
       }

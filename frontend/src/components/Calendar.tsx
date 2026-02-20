@@ -121,7 +121,12 @@ export const Calendar: React.FC<CalendarProps> = ({
       : null;
 
     const entryId = periodIdMap.get(dateString);
+    const todayDate = new Date();
+    todayDate.setHours(0, 0, 0, 0);
+    const cellDate = new Date(date);
+    cellDate.setHours(0, 0, 0, 0);
     const isToday = date.toDateString() === new Date().toDateString();
+    const isFutureDate = cellDate > todayDate;
     const dateISO = toLocalDateString(date);
     const isFertile = fertileWindowDates.has(dateISO);
     const isFertileOvulation = dateISO === fertileOvulationDate;
@@ -137,7 +142,11 @@ export const Calendar: React.FC<CalendarProps> = ({
         key={day}
         type="button"
         aria-label={`calendar-day-${toLocalDateString(date)}`}
-        onClick={() => onDateAction?.(toLocalDateString(date), entryId)}
+        onClick={() => {
+          if (isFutureDate && !entryId) return;
+          onDateAction?.(toLocalDateString(date), entryId);
+        }}
+        disabled={isFutureDate && !entryId}
         className={[
           'calendar-cell',
           'calendar-button',
@@ -147,10 +156,13 @@ export const Calendar: React.FC<CalendarProps> = ({
           !isPeriod && isPredicted ? 'predicted' : '',
           !isPeriod && !isPredicted && isFertileOvulation ? 'fertile-ovulation' : '',
           !isPeriod && !isPredicted && isFertile && !isFertileOvulation ? 'fertile' : '',
-          isToday ? 'today' : ''
+          isToday ? 'today' : '',
+          isFutureDate && !entryId ? 'disabled' : ''
         ].join(' ')}
         title={
-          isPeriod
+          isFutureDate && !entryId
+            ? 'Cannot add entries for future dates'
+            : isPeriod
             ? 'Remove period entry'
             : ovulationTooltip || (isFertile ? 'Fertile window' : 'Add period entry')
         }

@@ -493,6 +493,12 @@ a {
   box-shadow: none;
 }
 
+.calendar-cell.disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .calendar-button {
   font: inherit;
   cursor: pointer;

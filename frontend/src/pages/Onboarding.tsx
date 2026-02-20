@@ -2,9 +2,17 @@ import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePeriodStore } from '../store';
 
+const toLocalDateString = (date: Date) => {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, '0');
+  const day = `${date.getDate()}`.padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export const Onboarding: React.FC = () => {
   const [step, setStep] = useState<'initial' | 'name' | 'dates'>('initial');
   const [dates, setDates] = useState<string[]>(['']);
+  const [dateErrors, setDateErrors] = useState<string[]>([]);
   const navigate = useNavigate();
   const addPeriodToStore = usePeriodStore(state => state.addPeriodToStore);
   const profile = usePeriodStore(state => state.profile);
@@ -15,6 +23,14 @@ export const Onboarding: React.FC = () => {
     [dates]
   );
 
+  // Date bounds: max = today, min = 1 year ago
+  const today = useMemo(() => toLocalDateString(new Date()), []);
+  const oneYearAgo = useMemo(() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - 1);
+    return toLocalDateString(d);
+  }, []);
+
   const handleAddDate = () => {
     setDates([...dates, '']);
   };
@@ -23,15 +39,44 @@ export const Onboarding: React.FC = () => {
     setDates(dates.filter((_, i) => i !== idx));
   };
 
+  const validateDate = (value: string): string | null => {
+    if (!value) return null;
+    if (value > today) return 'Date cannot be in the future';
+    if (value < oneYearAgo) return 'Date cannot be more than 1 year ago';
+    return null;
+  };
+
   const handleDateChange = (idx: number, value: string) => {
     const newDates = [...dates];
     newDates[idx] = value;
     setDates(newDates);
+
+    const newErrors = [...dateErrors];
+    newErrors[idx] = validateDate(value) || '';
+    setDateErrors(newErrors);
   };
 
   const handleSubmit = async () => {
     if (trimmedDates.length === 0) {
       alert('Please enter at least one date');
+      return;
+    }
+
+    // Validate all dates before submitting
+    const errors: string[] = [];
+    for (const date of trimmedDates) {
+      const err = validateDate(date);
+      if (err) errors.push(`${date}: ${err}`);
+    }
+    if (errors.length > 0) {
+      alert(`Please fix the following:\n${errors.join('\n')}`);
+      return;
+    }
+
+    // Check for duplicate dates
+    const uniqueDates = new Set(trimmedDates);
+    if (uniqueDates.size !== trimmedDates.length) {
+      alert('Please remove duplicate dates.');
       return;
     }
 
@@ -143,25 +188,34 @@ export const Onboarding: React.FC = () => {
 
                   <div style={{ marginTop: 20, display: 'grid', gap: 12 }}>
                     {dates.map((date, idx) => (
-                      <div key={idx} style={{ display: 'flex', gap: 10 }}>
-                        <input
-                          type="date"
-                          value={date}
-                          onChange={(e) => handleDateChange(idx, e.target.value)}
-                          style={{
-                            flex: 1,
-                            padding: '10px 12px',
-                            borderRadius: 10,
-                            border: '1px solid #ececf3'
-                          }}
-                        />
-                        {dates.length > 1 && (
-                          <button
-                            className="btn btn-ghost"
-                            onClick={() => handleRemoveDate(idx)}
-                          >
-                            Remove
-                          </button>
+                      <div key={idx}>
+                        <div style={{ display: 'flex', gap: 10 }}>
+                          <input
+                            type="date"
+                            value={date}
+                            max={today}
+                            min={oneYearAgo}
+                            onChange={(e) => handleDateChange(idx, e.target.value)}
+                            style={{
+                              flex: 1,
+                              padding: '10px 12px',
+                              borderRadius: 10,
+                              border: dateErrors[idx] ? '1px solid #e53935' : '1px solid #ececf3'
+                            }}
+                          />
+                          {dates.length > 1 && (
+                            <button
+                              className="btn btn-ghost"
+                              onClick={() => handleRemoveDate(idx)}
+                            >
+                              Remove
+                            </button>
+                          )}
+                        </div>
+                        {dateErrors[idx] && (
+                          <p style={{ color: '#e53935', fontSize: 13, margin: '4px 0 0 0' }}>
+                            {dateErrors[idx]}
+                          </p>
                         )}
                       </div>
                     ))}

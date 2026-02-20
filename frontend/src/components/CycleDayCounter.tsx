@@ -37,6 +37,10 @@ export const CycleDayCounter: React.FC<CycleDayCounterProps> = ({
   }, [lastPeriodDate]);
 
   const cycleLength = averageCycleLength ?? 28;
+  // A cycle beyond 45 days is medically unlikely for most people
+  const MAX_REALISTIC_CYCLE_DAY = Math.max(cycleLength + 10, 45);
+  const isCycleOverdue = cycleDay !== null && cycleDay > cycleLength;
+  const isCycleUnrealistic = cycleDay !== null && cycleDay > MAX_REALISTIC_CYCLE_DAY;
 
   if (!cycleDay || cycleDay < 1) {
     return (
@@ -49,7 +53,8 @@ export const CycleDayCounter: React.FC<CycleDayCounterProps> = ({
     );
   }
 
-  const progress = Math.min(100, Math.round((cycleDay / cycleLength) * 100));
+  const displayDay = isCycleUnrealistic ? MAX_REALISTIC_CYCLE_DAY : cycleDay;
+  const progress = Math.min(100, Math.round((displayDay / cycleLength) * 100));
   const emoji = currentPhase ? phaseEmoji[currentPhase] ?? '📅' : '📅';
   const label = currentPhase ? phaseLabel[currentPhase] ?? '' : '';
 
@@ -58,12 +63,27 @@ export const CycleDayCounter: React.FC<CycleDayCounterProps> = ({
       <p className="section-title">Cycle day</p>
       <div className="cycle-day-hero">
         <span className="cycle-day-number">
-          Day {cycleDay}
+          Day {displayDay}{isCycleUnrealistic ? '+' : ''}
         </span>
         <span className="cycle-day-total">
           of ~{cycleLength}
         </span>
       </div>
+      {isCycleUnrealistic ? (
+        <div style={{ background: '#fff3e0', borderRadius: 8, padding: '8px 12px', margin: '8px 0' }}>
+          <span style={{ fontSize: 13, color: '#e65100' }}>
+            ⚠️ It's been over {MAX_REALISTIC_CYCLE_DAY} days since your last logged period.
+            You may have missed logging a new cycle start date.
+          </span>
+        </div>
+      ) : isCycleOverdue ? (
+        <div style={{ background: '#fff8e1', borderRadius: 8, padding: '8px 12px', margin: '8px 0' }}>
+          <span style={{ fontSize: 13, color: '#f57f17' }}>
+            📌 Day {cycleDay} is past your usual ~{cycleLength}-day cycle.
+            Your period may be arriving soon — or log a new start date if it already has.
+          </span>
+        </div>
+      ) : null}
       <div className="cycle-day-phase">
         <span>{emoji}</span>
         <span>{label} phase</span>

@@ -10,7 +10,7 @@ export const History: React.FC = () => {
 
   const handleDelete = async (entryId: number, date: string) => {
     if (window.confirm(`Delete period on ${date}?`)) {
-      await removePeriod(entryId);
+      await removePeriod(entryId, date);
     }
   };
 

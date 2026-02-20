@@ -4,7 +4,7 @@ import { usePeriodStore } from '../store';
 import type { DailyLog as DailyLogEntry } from '../db';
 
 export const DailyLog: React.FC = () => {
-  const { dailyLogs, loadDailyLogsFromDB, upsertDailyLog } = usePeriodStore();
+  const { dailyLogs, dailyLogsError, loadDailyLogsFromDB, upsertDailyLog } = usePeriodStore();
   const toLocalDateString = (date: Date) => {
     const year = date.getFullYear();
     const month = `${date.getMonth() + 1}`.padStart(2, '0');
@@ -58,8 +58,14 @@ export const DailyLog: React.FC = () => {
   const handleShiftDay = (offset: number) => {
     const date = new Date(selectedDate);
     date.setDate(date.getDate() + offset);
-    setSelectedDate(toLocalDateString(date));
+    const todayStr = toLocalDateString(new Date());
+    const newDateStr = toLocalDateString(date);
+    // Don't allow navigating to future dates
+    if (newDateStr > todayStr) return;
+    setSelectedDate(newDateStr);
   };
+
+  const isToday = selectedDate === toLocalDateString(new Date());
 
   return (
     <div>
@@ -75,7 +81,7 @@ export const DailyLog: React.FC = () => {
           <button className="btn btn-ghost" onClick={() => setSelectedDate(toLocalDateString(new Date()))}>
             Today
           </button>
-          <button className="btn btn-ghost" onClick={() => handleShiftDay(1)}>
+          <button className="btn btn-ghost" onClick={() => handleShiftDay(1)} disabled={isToday} style={isToday ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}>
             Next →
           </button>
         </div>
@@ -86,6 +92,8 @@ export const DailyLog: React.FC = () => {
         log={draftLog}
         onSelect={handleUpdate}
       />
+
+      {dailyLogsError && <div className="alert">⚠️ {dailyLogsError}</div>}
 
       <div className="card" style={{ marginTop: 24 }}>
         <p className="section-title">Why it matters</p>

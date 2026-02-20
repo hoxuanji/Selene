@@ -253,7 +253,7 @@ export const Dashboard: React.FC = () => {
   const handleCalendarAction = async (date: string, entryId?: number) => {
     if (entryId) {
       if (window.confirm(`Delete period entry on ${date}?`)) {
-        await removePeriod(entryId);
+        await removePeriod(entryId, date);
       }
       return;
     }
