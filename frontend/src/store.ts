@@ -78,7 +78,7 @@ const DEFAULT_PROFILE: AlertProfile = {
   userName: 'Friend',
   avatar: '🌸',
   normalMin: 21,
-  normalMax: 35,
+  normalMax: 45,
   variationDays: 7,
   recentWindowDays: 60,
   frequentCount: 3,

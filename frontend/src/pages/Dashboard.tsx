@@ -198,6 +198,38 @@ export const Dashboard: React.FC = () => {
     return null;
   }, [periods, profile]);
 
+  const skippedCycleWarning = useMemo(() => {
+    if (periods.length < 2) return null;
+    const sorted = [...periods].sort();
+    const SKIPPED_THRESHOLD = 45;
+
+    // Check historical gaps for any skipped cycles
+    const skippedGaps: { from: string; to: string; days: number }[] = [];
+    for (let i = 1; i < sorted.length; i++) {
+      const prev = new Date(sorted[i - 1]).getTime();
+      const curr = new Date(sorted[i]).getTime();
+      const gap = Math.round((curr - prev) / (1000 * 60 * 60 * 24));
+      if (gap > SKIPPED_THRESHOLD) {
+        skippedGaps.push({
+          from: sorted[i - 1],
+          to: sorted[i],
+          days: gap,
+        });
+      }
+    }
+
+    // Check current cycle (time since last period)
+    const lastDate = sorted[sorted.length - 1];
+    const daysSinceLast = Math.round(
+      (Date.now() - new Date(lastDate).getTime()) / (1000 * 60 * 60 * 24)
+    );
+    const currentSkipped = daysSinceLast > SKIPPED_THRESHOLD;
+
+    if (!currentSkipped && skippedGaps.length === 0) return null;
+
+    return { currentSkipped, daysSinceLast, skippedGaps };
+  }, [periods]);
+
   const stressSleepWarning = useMemo(() => {
     const recent = [...dailyLogs]
       .sort((a, b) => (a.date < b.date ? -1 : 1))
@@ -282,6 +314,38 @@ export const Dashboard: React.FC = () => {
         </div>
       )}
       {cycleAlert && <div className="alert">🧠 {cycleAlert}</div>}
+      {skippedCycleWarning && (
+        <div className="alert" style={{ background: '#fce4ec', border: '1px solid #ef9a9a', flexDirection: 'column', alignItems: 'flex-start', gap: 8 }}>
+          <strong style={{ color: '#b71c1c' }}>🚨 Possible skipped cycle detected</strong>
+          {skippedCycleWarning.currentSkipped && (
+            <p style={{ margin: 0, color: '#c62828', fontSize: 14 }}>
+              It has been <strong>{skippedCycleWarning.daysSinceLast} days</strong> since your last logged period.
+              A gap longer than 45 days could indicate <strong>pregnancy</strong>, significant hormonal changes
+              (e.g. PCOS, thyroid issues), or other medical conditions.
+            </p>
+          )}
+          {skippedCycleWarning.skippedGaps.length > 0 && (
+            <div style={{ fontSize: 13, color: '#c62828' }}>
+              <p style={{ margin: '4px 0' }}>
+                <strong>{skippedCycleWarning.skippedGaps.length} past gap{skippedCycleWarning.skippedGaps.length > 1 ? 's' : ''}</strong> longer than 45 days found in your history:
+              </p>
+              <ul style={{ margin: '4px 0 0 16px', padding: 0 }}>
+                {skippedCycleWarning.skippedGaps.slice(0, 3).map((gap, i) => (
+                  <li key={i}>
+                    {new Date(gap.from).toLocaleDateString()} → {new Date(gap.to).toLocaleDateString()} ({gap.days} days)
+                  </li>
+                ))}
+                {skippedCycleWarning.skippedGaps.length > 3 && (
+                  <li>…and {skippedCycleWarning.skippedGaps.length - 3} more</li>
+                )}
+              </ul>
+            </div>
+          )}
+          <p style={{ margin: '4px 0 0', color: '#6a6b76', fontSize: 13 }}>
+            If this is unexpected, consider taking a pregnancy test or consulting a healthcare provider.
+          </p>
+        </div>
+      )}
 
       {/* ===== Notification Settings ===== */}
       <div className="card" style={{ marginTop: 16 }}>

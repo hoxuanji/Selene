@@ -37,10 +37,11 @@ export const CycleDayCounter: React.FC<CycleDayCounterProps> = ({
   }, [lastPeriodDate]);
 
   const cycleLength = averageCycleLength ?? 28;
-  // A cycle beyond 45 days is medically unlikely for most people
-  const MAX_REALISTIC_CYCLE_DAY = Math.max(cycleLength + 10, 45);
-  const isCycleOverdue = cycleDay !== null && cycleDay > cycleLength;
-  const isCycleUnrealistic = cycleDay !== null && cycleDay > MAX_REALISTIC_CYCLE_DAY;
+  // 4–45 day gaps between periods are within normal range.
+  // Beyond 45 days suggests a skipped cycle → possible pregnancy or medical concern.
+  const NORMAL_MAX_CYCLE_DAY = 45;
+  const isCycleOverdue = cycleDay !== null && cycleDay > cycleLength && cycleDay <= NORMAL_MAX_CYCLE_DAY;
+  const isSkippedCycle = cycleDay !== null && cycleDay > NORMAL_MAX_CYCLE_DAY;
 
   if (!cycleDay || cycleDay < 1) {
     return (
@@ -53,8 +54,7 @@ export const CycleDayCounter: React.FC<CycleDayCounterProps> = ({
     );
   }
 
-  const displayDay = isCycleUnrealistic ? MAX_REALISTIC_CYCLE_DAY : cycleDay;
-  const progress = Math.min(100, Math.round((displayDay / cycleLength) * 100));
+  const progress = Math.min(100, Math.round((Math.min(cycleDay, NORMAL_MAX_CYCLE_DAY) / cycleLength) * 100));
   const emoji = currentPhase ? phaseEmoji[currentPhase] ?? '📅' : '📅';
   const label = currentPhase ? phaseLabel[currentPhase] ?? '' : '';
 
@@ -63,23 +63,25 @@ export const CycleDayCounter: React.FC<CycleDayCounterProps> = ({
       <p className="section-title">Cycle day</p>
       <div className="cycle-day-hero">
         <span className="cycle-day-number">
-          Day {displayDay}{isCycleUnrealistic ? '+' : ''}
+          Day {cycleDay}
         </span>
         <span className="cycle-day-total">
           of ~{cycleLength}
         </span>
       </div>
-      {isCycleUnrealistic ? (
-        <div style={{ background: '#fff3e0', borderRadius: 8, padding: '8px 12px', margin: '8px 0' }}>
-          <span style={{ fontSize: 13, color: '#e65100' }}>
-            ⚠️ It's been over {MAX_REALISTIC_CYCLE_DAY} days since your last logged period.
-            You may have missed logging a new cycle start date.
+      {isSkippedCycle ? (
+        <div style={{ background: '#fce4ec', borderRadius: 8, padding: '10px 14px', margin: '8px 0' }}>
+          <span style={{ fontSize: 13, color: '#b71c1c' }}>
+            🚨 <strong>Possible skipped cycle:</strong> It has been {cycleDay} days since your last period.
+            A gap of more than 45 days may indicate pregnancy, significant hormonal changes, or other
+            medical conditions. If this is unexpected, please consider consulting a healthcare provider.
           </span>
         </div>
       ) : isCycleOverdue ? (
         <div style={{ background: '#fff8e1', borderRadius: 8, padding: '8px 12px', margin: '8px 0' }}>
           <span style={{ fontSize: 13, color: '#f57f17' }}>
             📌 Day {cycleDay} is past your usual ~{cycleLength}-day cycle.
+            This can be a normal delay (cycles of 4–45 days are common).
             Your period may be arriving soon — or log a new start date if it already has.
           </span>
         </div>

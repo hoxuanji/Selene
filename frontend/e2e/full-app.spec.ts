@@ -277,12 +277,11 @@ test.describe('Dashboard – core elements', () => {
    ══════════════════════════════════════════════════════ */
 
 test.describe('Cycle day counter', () => {
-  test('shows realistic cycle day (≤45)', async ({ page }) => {
+  test('shows realistic cycle day (≥1)', async ({ page }) => {
     await completeOnboardingWithDates(page);
     const text = await page.locator('.cycle-day-number').textContent();
     const day = parseInt(text!.match(/Day (\d+)/)![1]);
     expect(day).toBeGreaterThanOrEqual(1);
-    expect(day).toBeLessThanOrEqual(45);
   });
 
   test('shows "Day X of ~Y" format', async ({ page }) => {
@@ -296,13 +295,15 @@ test.describe('Cycle day counter', () => {
     await expect(page.getByText(/past your usual/)).toBeVisible();
   });
 
-  test('very overdue cycle (>45 days) shows orange warning', async ({ page }) => {
+  test('very overdue cycle (>45 days) shows skipped cycle warning', async ({ page }) => {
     await completeOnboardingWithDates(page, [daysAgo(110), daysAgo(80), daysAgo(50)]);
-    await expect(page.getByText(/missed logging/)).toBeVisible();
-    // Day should be capped
+    // >45 days since last period = possible skipped cycle (pregnancy/medical)
+    await expect(page.getByText(/Possible skipped cycle detected/)).toBeVisible();
+    await expect(page.getByText(/pregnancy/i).first()).toBeVisible();
+    // Day should display actual value (no longer capped)
     const text = await page.locator('.cycle-day-number').textContent();
     const day = parseInt(text!.match(/Day (\d+)/)![1]);
-    expect(day).toBeLessThanOrEqual(45);
+    expect(day).toBeGreaterThan(45);
   });
 
   test('progress bar does not exceed 100%', async ({ page }) => {
@@ -598,6 +599,20 @@ test.describe('Personalization', () => {
    ══════════════════════════════════════════════════════ */
 
 test.describe('Edge cases & regressions', () => {
+  test('dashboard shows skipped cycle warning for historical gaps >45 days', async ({ page }) => {
+    // Dates with a 60-day gap between 1st and 2nd entry
+    await completeOnboardingWithDates(page, [daysAgo(120), daysAgo(60), daysAgo(30)]);
+    await expect(page.getByText(/Possible skipped cycle detected/)).toBeVisible();
+    await expect(page.getByText(/longer than 45 days/)).toBeVisible();
+    await expect(page.getByText(/pregnancy/i)).toBeVisible();
+  });
+
+  test('normal cycle gaps (≤45 days) do NOT show skipped warning', async ({ page }) => {
+    // All gaps are 30 days → normal
+    await completeOnboardingWithDates(page, [daysAgo(90), daysAgo(60), daysAgo(30)]);
+    await expect(page.getByText(/Possible skipped cycle detected/)).not.toBeVisible();
+  });
+
   test('single date entry does not crash', async ({ page }) => {
     await page.getByRole('button', { name: 'Continue' }).click();
     await page.getByPlaceholder('Enter your name').fill('Solo');
