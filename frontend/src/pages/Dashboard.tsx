@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useMemo, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { usePeriodStore } from '../store';
 import { PredictionCard } from '../components/PredictionCard';
@@ -10,11 +10,8 @@ import { getPhase } from '../utils/phaseEngine';
 import {
   notificationsSupported,
   getPermission,
-  requestPermission,
   getNotificationPrefs,
-  saveNotificationPrefs,
   checkInsightNotifications,
-  type NotificationPrefs,
 } from '../utils/notifications';
 
 export const Dashboard: React.FC = () => {
@@ -28,7 +25,6 @@ export const Dashboard: React.FC = () => {
     addPeriodToStore,
     removePeriod,
     profile,
-    setProfile,
     dailyLogs,
     loadDailyLogsFromDB
   } = usePeriodStore();
@@ -38,39 +34,8 @@ export const Dashboard: React.FC = () => {
     loadDailyLogsFromDB();
   }, []);
 
-  /* ---- Notification settings ---- */
-  const [notifPrefs, setNotifPrefs] = useState<NotificationPrefs>(getNotificationPrefs);
-  const [notifPermission, setNotifPermission] = useState<NotificationPermission>(getPermission);
-
-  const handleToggleNotifications = useCallback(async () => {
-    if (!notificationsSupported()) return;
-
-    if (!notifPrefs.enabled) {
-      // Turning ON → request permission first
-      const perm = await requestPermission();
-      setNotifPermission(perm);
-      if (perm !== 'granted') return;
-    }
-
-    const next: NotificationPrefs = { ...notifPrefs, enabled: !notifPrefs.enabled };
-    saveNotificationPrefs(next);
-    setNotifPrefs(next);
-  }, [notifPrefs]);
-
-  const handleReminderHourChange = useCallback(
-    (hour: number) => {
-      const next: NotificationPrefs = { ...notifPrefs, reminderHour: hour };
-      saveNotificationPrefs(next);
-      setNotifPrefs(next);
-    },
-    [notifPrefs]
-  );
-
-  const handleToggleInsights = useCallback(() => {
-    const next: NotificationPrefs = { ...notifPrefs, insightsEnabled: !notifPrefs.insightsEnabled };
-    saveNotificationPrefs(next);
-    setNotifPrefs(next);
-  }, [notifPrefs]);
+  /* ---- Notification prefs (read-only for insight check) ---- */
+  const notifPrefs = getNotificationPrefs();
 
   const previousPhaseRef = useRef<string | null>(null);
 
@@ -347,81 +312,6 @@ export const Dashboard: React.FC = () => {
         </div>
       )}
 
-      {/* ===== Notification Settings ===== */}
-      <div className="card" style={{ marginTop: 16 }}>
-        <p className="section-title">🔔 Reminder Notifications</p>
-        {!notificationsSupported() ? (
-          <p style={{ color: '#6a6b76' }}>
-            Your browser does not support notifications.
-          </p>
-        ) : (
-          <>
-            <div className="notif-row">
-              <div>
-                <strong>
-                  {notifPrefs.enabled ? 'Reminders are on' : 'Reminders are off'}
-                </strong>
-                <p className="notif-desc">
-                  {notifPrefs.enabled
-                    ? `You'll get a gentle nudge if you haven't logged by ${formatHour(notifPrefs.reminderHour)}.`
-                    : 'Enable to receive a daily check-in reminder through your browser.'}
-                </p>
-              </div>
-              <button
-                className={`btn ${notifPrefs.enabled ? 'btn-ghost' : 'btn-primary'}`}
-                onClick={handleToggleNotifications}
-              >
-                {notifPrefs.enabled ? 'Turn off' : 'Turn on'}
-              </button>
-            </div>
-
-            {notifPermission === 'denied' && (
-              <div className="alert" style={{ marginTop: 12 }}>
-                ⚠️ Notifications are blocked by your browser. Please allow them
-                in your browser settings to enable reminders.
-              </div>
-            )}
-
-            {notifPrefs.enabled && notifPermission === 'granted' && (
-              <div style={{ marginTop: 16, display: 'flex', flexWrap: 'wrap', gap: 16 }}>
-                <label className="form-field" style={{ maxWidth: 220 }}>
-                  <span className="label-icon">⏰</span> Reminder time
-                  <select
-                    className="input"
-                    value={notifPrefs.reminderHour}
-                    onChange={(e) => handleReminderHourChange(Number(e.target.value))}
-                  >
-                    {Array.from({ length: 24 }, (_, h) => (
-                      <option key={h} value={h}>
-                        {formatHour(h)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <div className="notif-row" style={{ flex: 1, minWidth: 200 }}>
-                  <div>
-                    <strong>Cycle insights</strong>
-                    <p className="notif-desc">
-                      {notifPrefs.insightsEnabled
-                        ? 'Notify about period approaching, fertile window, ovulation signals, and more.'
-                        : 'Insight notifications are off.'}
-                    </p>
-                  </div>
-                  <button
-                    className={`btn ${notifPrefs.insightsEnabled ? 'btn-ghost' : 'btn-primary'}`}
-                    style={{ whiteSpace: 'nowrap' }}
-                    onClick={handleToggleInsights}
-                  >
-                    {notifPrefs.insightsEnabled ? 'Turn off' : 'Turn on'}
-                  </button>
-                </div>
-              </div>
-            )}
-          </>
-        )}
-      </div>
-
       <div className="grid grid-2" style={{ marginTop: 20 }}>
         <CycleDayCounter
           lastPeriodDate={lastPeriod}
@@ -472,8 +362,8 @@ export const Dashboard: React.FC = () => {
         />
       </div>
 
+      {/* Quick profile summary */}
       <div className="card" style={{ marginTop: 24 }}>
-        <p className="section-title">Personalization</p>
         <div className="profile-header">
           <div className="avatar-circle">
             <span className="avatar-emoji">{profile.avatar}</span>
@@ -482,321 +372,10 @@ export const Dashboard: React.FC = () => {
             <p className="profile-label">Welcome</p>
             <h3 style={{ margin: 0 }}>Hi, {profile.userName}</h3>
           </div>
-          <div className="profile-actions">
-            <select
-              className="input"
-              value={profile.avatar}
-              onChange={(e) =>
-                setProfile({
-                  ...profile,
-                  avatar: e.target.value
-                })
-              }
-            >
-              <option value="🌸">🌸</option>
-              <option value="🌼">🌼</option>
-              <option value="🌙">🌙</option>
-              <option value="⭐">⭐</option>
-              <option value="🫶">🫶</option>
-            </select>
-          </div>
+          <Link className="btn btn-ghost" to="/settings" style={{ marginLeft: 'auto' }}>
+            ⚙️ Settings
+          </Link>
         </div>
-
-        <div className="form-grid roomy">
-          <label className="form-field">
-            <span className="label-icon">📝</span> Name
-            <input
-              className="input"
-              type="text"
-              value={profile.userName}
-              onChange={(e) =>
-                setProfile({
-                  ...profile,
-                  userName: e.target.value
-                })
-              }
-            />
-          </label>
-          <label className="form-field">
-            <span className="label-icon">🎂</span> Age group
-            <select
-              className="input"
-              value={profile.ageGroup}
-              onChange={(e) =>
-                setProfile({
-                  ...profile,
-                  ageGroup: e.target.value as typeof profile.ageGroup
-                })
-              }
-            >
-              <option value="under18">Under 18</option>
-              <option value="18-24">18–24</option>
-              <option value="25-34">25–34</option>
-              <option value="35-44">35–44</option>
-              <option value="45plus">45+</option>
-            </select>
-          </label>
-          <label className="form-field">
-            <span className="label-icon">🧬</span> PCOS
-            <select
-              className="input"
-              value={profile.pcos ? 'yes' : 'no'}
-              onChange={(e) =>
-                setProfile({
-                  ...profile,
-                  pcos: e.target.value === 'yes'
-                })
-              }
-            >
-              <option value="no">No</option>
-              <option value="yes">Yes</option>
-            </select>
-          </label>
-          <label className="form-field">
-            <span className="label-icon">🧪</span> Thyroid
-            <select
-              className="input"
-              value={profile.thyroid ? 'yes' : 'no'}
-              onChange={(e) =>
-                setProfile({
-                  ...profile,
-                  thyroid: e.target.value === 'yes'
-                })
-              }
-            >
-              <option value="no">No</option>
-              <option value="yes">Yes</option>
-            </select>
-          </label>
-          <label className="form-field">
-            <span className="label-icon">💊</span> Birth control
-            <select
-              className="input"
-              value={profile.birthControl ? 'yes' : 'no'}
-              onChange={(e) =>
-                setProfile({
-                  ...profile,
-                  birthControl: e.target.value === 'yes'
-                })
-              }
-            >
-              <option value="no">No</option>
-              <option value="yes">Yes</option>
-            </select>
-          </label>
-          <label className="form-field">
-            <span className="label-icon">👶</span> Postpartum
-            <select
-              className="input"
-              value={profile.postpartum ? 'yes' : 'no'}
-              onChange={(e) =>
-                setProfile({
-                  ...profile,
-                  postpartum: e.target.value === 'yes'
-                })
-              }
-            >
-              <option value="no">No</option>
-              <option value="yes">Yes</option>
-            </select>
-          </label>
-          <label className="form-field">
-            <span className="label-icon">🗓️</span> Postpartum (months)
-            <input
-              className="input"
-              type="number"
-              min={0}
-              max={24}
-              value={profile.postpartumMonths ?? ''}
-              placeholder="0"
-              onChange={(e) =>
-                setProfile({
-                  ...profile,
-                  postpartumMonths: e.target.value ? Number(e.target.value) : null
-                })
-              }
-            />
-          </label>
-          <label className="form-field">
-            <span className="label-icon">📉</span> Shortest cycle you remember
-            <input
-              className="input"
-              type="number"
-              min={10}
-              max={45}
-              value={profile.shortestCycle ?? ''}
-              onChange={(e) =>
-                setProfile({
-                  ...profile,
-                  shortestCycle: e.target.value ? Number(e.target.value) : null
-                })
-              }
-            />
-          </label>
-          <label className="form-field">
-            <span className="label-icon">📈</span> Longest cycle you remember
-            <input
-              className="input"
-              type="number"
-              min={20}
-              max={80}
-              value={profile.longestCycle ?? ''}
-              onChange={(e) =>
-                setProfile({
-                  ...profile,
-                  longestCycle: e.target.value ? Number(e.target.value) : null
-                })
-              }
-            />
-          </label>
-          <label className="form-field">
-            <span className="label-icon">🩸</span> Typical period length (days)
-            <input
-              className="input"
-              type="number"
-              min={2}
-              max={10}
-              value={profile.typicalPeriodLength ?? ''}
-              onChange={(e) =>
-                setProfile({
-                  ...profile,
-                  typicalPeriodLength: e.target.value ? Number(e.target.value) : null
-                })
-              }
-            />
-          </label>
-          <label className="form-field">
-            <span className="label-icon">✈️</span> Travel / timezone changes
-            <select
-              className="input"
-              value={profile.travelRecent ? 'yes' : 'no'}
-              onChange={(e) =>
-                setProfile({
-                  ...profile,
-                  travelRecent: e.target.value === 'yes'
-                })
-              }
-            >
-              <option value="no">No</option>
-              <option value="yes">Yes</option>
-            </select>
-          </label>
-          <label className="form-field">
-            <span className="label-icon">😴</span> Sleep (avg hours)
-            <input
-              className="input"
-              type="number"
-              min={3}
-              max={12}
-              value={profile.sleepHours ?? ''}
-              onChange={(e) =>
-                setProfile({
-                  ...profile,
-                  sleepHours: e.target.value ? Number(e.target.value) : null
-                })
-              }
-            />
-          </label>
-          <label className="form-field">
-            <span className="label-icon">➖</span> Typical cycle min
-            <input
-              className="input"
-              type="number"
-              min={15}
-              max={40}
-              value={profile.normalMin}
-              onChange={(e) =>
-                setProfile({
-                  ...profile,
-                  normalMin: Number(e.target.value)
-                })
-              }
-            />
-          </label>
-          <label className="form-field">
-            <span className="label-icon">➕</span> Typical cycle max
-            <input
-              className="input"
-              type="number"
-              min={21}
-              max={50}
-              value={profile.normalMax}
-              onChange={(e) =>
-                setProfile({
-                  ...profile,
-                  normalMax: Number(e.target.value)
-                })
-              }
-            />
-          </label>
-          <label className="form-field">
-            <span className="label-icon">🎯</span> Variation allowance (days)
-            <input
-              className="input"
-              type="number"
-              min={3}
-              max={14}
-              value={profile.variationDays}
-              onChange={(e) =>
-                setProfile({
-                  ...profile,
-                  variationDays: Number(e.target.value)
-                })
-              }
-            />
-          </label>
-          <label className="form-field">
-            <span className="label-icon">⏱️</span> Recent window (days)
-            <input
-              className="input"
-              type="number"
-              min={30}
-              max={120}
-              value={profile.recentWindowDays}
-              onChange={(e) =>
-                setProfile({
-                  ...profile,
-                  recentWindowDays: Number(e.target.value)
-                })
-              }
-            />
-          </label>
-          <label className="form-field">
-            <span className="label-icon">🔔</span> Frequent entries alert (count)
-            <input
-              className="input"
-              type="number"
-              min={2}
-              max={6}
-              value={profile.frequentCount}
-              onChange={(e) =>
-                setProfile({
-                  ...profile,
-                  frequentCount: Number(e.target.value)
-                })
-              }
-            />
-          </label>
-          <label className="form-field">
-            <span className="label-icon">🧭</span> Minimum cycles for alerts
-            <input
-              className="input"
-              type="number"
-              min={2}
-              max={8}
-              value={profile.minCyclesForAlerts}
-              onChange={(e) =>
-                setProfile({
-                  ...profile,
-                  minCyclesForAlerts: Number(e.target.value)
-                })
-              }
-            />
-          </label>
-        </div>
-        <p style={{ color: '#6a6b76', marginTop: 12 }}>
-          These settings update alerts dynamically based on your recent history.
-        </p>
         <div style={{ marginTop: 16 }}>
           <p className="section-title">Last 10 period start dates</p>
           {lastTenDates.length === 0 ? (
@@ -816,9 +395,3 @@ export const Dashboard: React.FC = () => {
     </div>
   );
 };
-
-function formatHour(h: number): string {
-  const suffix = h >= 12 ? 'PM' : 'AM';
-  const display = h === 0 ? 12 : h > 12 ? h - 12 : h;
-  return `${display}:00 ${suffix}`;
-}

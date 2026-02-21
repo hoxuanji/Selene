@@ -78,6 +78,8 @@ const completeOnboardingWithDates = async (
   await page.getByRole('button', { name: 'Continue' }).click();
   await page.getByPlaceholder('Enter your name').fill('Test User');
   await page.getByRole('button', { name: 'Continue' }).click();
+  // Skip profile step (step 3 of 4)
+  await page.getByRole('button', { name: 'Skip for now' }).click();
 
   const dateInputs = page.locator('input[type="date"]');
   await dateInputs.nth(0).fill(d1);
@@ -95,16 +97,20 @@ const completeOnboardingWithDates = async (
    ══════════════════════════════════════════════════════ */
 
 test.describe('Onboarding – happy path', () => {
-  test('full flow: welcome → name → 3 dates → dashboard', async ({ page }) => {
+  test('full flow: welcome → name → profile → 3 dates → dashboard', async ({ page }) => {
     await expect(page.getByText('Selene')).toBeVisible();
-    await expect(page.getByText('Step 1 of 3')).toBeVisible();
+    await expect(page.getByText('Step 1 of 4')).toBeVisible();
 
     await page.getByRole('button', { name: 'Continue' }).click();
-    await expect(page.getByText('Step 2 of 3')).toBeVisible();
+    await expect(page.getByText('Step 2 of 4')).toBeVisible();
 
     await page.getByPlaceholder('Enter your name').fill('Alice');
     await page.getByRole('button', { name: 'Continue' }).click();
-    await expect(page.getByText('Step 3 of 3')).toBeVisible();
+    await expect(page.getByText('Step 3 of 4')).toBeVisible();
+
+    // Skip or continue through profile step
+    await page.getByRole('button', { name: 'Skip for now' }).click();
+    await expect(page.getByText('Step 4 of 4')).toBeVisible();
 
     const dateInputs = page.locator('input[type="date"]');
     await dateInputs.nth(0).fill(daysAgo(90));
@@ -123,16 +129,24 @@ test.describe('Onboarding – happy path', () => {
 
   test('back buttons navigate between steps', async ({ page }) => {
     await page.getByRole('button', { name: 'Continue' }).click();
-    await expect(page.getByText('Step 2 of 3')).toBeVisible();
+    await expect(page.getByText('Step 2 of 4')).toBeVisible();
     await page.getByRole('button', { name: 'Back' }).click();
-    await expect(page.getByText('Step 1 of 3')).toBeVisible();
+    await expect(page.getByText('Step 1 of 4')).toBeVisible();
 
     await page.getByRole('button', { name: 'Continue' }).click();
     await page.getByPlaceholder('Enter your name').fill('Bob');
     await page.getByRole('button', { name: 'Continue' }).click();
-    await expect(page.getByText('Step 3 of 3')).toBeVisible();
+    await expect(page.getByText('Step 3 of 4')).toBeVisible();
     await page.getByRole('button', { name: 'Back' }).click();
-    await expect(page.getByText('Step 2 of 3')).toBeVisible();
+    await expect(page.getByText('Step 2 of 4')).toBeVisible();
+
+    // Go forward to profile, then to dates
+    await page.getByPlaceholder('Enter your name').fill('Bob');
+    await page.getByRole('button', { name: 'Continue' }).click();
+    await page.getByRole('button', { name: 'Skip for now' }).click();
+    await expect(page.getByText('Step 4 of 4')).toBeVisible();
+    await page.getByRole('button', { name: 'Back' }).click();
+    await expect(page.getByText('Step 3 of 4')).toBeVisible();
   });
 });
 
@@ -147,22 +161,24 @@ test.describe('Onboarding – validation guardrails', () => {
     // Clear the name field (default profile name is 'Friend')
     await page.getByPlaceholder('Enter your name').fill('');
     await page.getByRole('button', { name: 'Continue' }).click();
-    await expect(page.getByText('Step 2 of 3')).toBeVisible();
+    await expect(page.getByText('Step 2 of 4')).toBeVisible();
   });
 
-  test('no dates → alert, stays on step 3', async ({ page }) => {
+  test('no dates → alert, stays on step 4', async ({ page }) => {
     page.on('dialog', (d) => d.accept());
     await page.getByRole('button', { name: 'Continue' }).click();
     await page.getByPlaceholder('Enter your name').fill('X');
     await page.getByRole('button', { name: 'Continue' }).click();
+    await page.getByRole('button', { name: 'Skip for now' }).click();
     await page.getByRole('button', { name: 'Continue' }).click();
-    await expect(page.getByText('Step 3 of 3')).toBeVisible();
+    await expect(page.getByText('Step 4 of 4')).toBeVisible();
   });
 
   test('date inputs carry max=today and min=1-year-ago', async ({ page }) => {
     await page.getByRole('button', { name: 'Continue' }).click();
     await page.getByPlaceholder('Enter your name').fill('X');
     await page.getByRole('button', { name: 'Continue' }).click();
+    await page.getByRole('button', { name: 'Skip for now' }).click();
 
     const dateInput = page.locator('input[type="date"]').first();
     expect(await dateInput.getAttribute('max')).toBe(today());
@@ -176,7 +192,7 @@ test.describe('Onboarding – validation guardrails', () => {
     await page.getByRole('button', { name: 'Continue' }).click();
     await page.getByPlaceholder('Enter your name').fill('X');
     await page.getByRole('button', { name: 'Continue' }).click();
-
+    await page.getByRole('button', { name: 'Skip for now' }).click();
     await page.locator('input[type="date"]').first().fill(daysFromNow(30));
     await expect(page.getByText('Date cannot be in the future')).toBeVisible();
   });
@@ -185,7 +201,7 @@ test.describe('Onboarding – validation guardrails', () => {
     await page.getByRole('button', { name: 'Continue' }).click();
     await page.getByPlaceholder('Enter your name').fill('X');
     await page.getByRole('button', { name: 'Continue' }).click();
-
+    await page.getByRole('button', { name: 'Skip for now' }).click();
     await page.locator('input[type="date"]').first().fill('2020-01-01');
     await expect(page.getByText('Date cannot be more than 1 year ago')).toBeVisible();
   });
@@ -197,10 +213,11 @@ test.describe('Onboarding – validation guardrails', () => {
     await page.getByRole('button', { name: 'Continue' }).click();
     await page.getByPlaceholder('Enter your name').fill('X');
     await page.getByRole('button', { name: 'Continue' }).click();
+    await page.getByRole('button', { name: 'Skip for now' }).click();
 
     await page.locator('input[type="date"]').first().fill(daysFromNow(10));
     await page.getByRole('button', { name: 'Continue' }).click();
-    await expect(page.getByText('Step 3 of 3')).toBeVisible();
+    await expect(page.getByText('Step 4 of 4')).toBeVisible();
     expect(alertMsg.toLowerCase()).toContain('future');
   });
 
@@ -211,6 +228,7 @@ test.describe('Onboarding – validation guardrails', () => {
     await page.getByRole('button', { name: 'Continue' }).click();
     await page.getByPlaceholder('Enter your name').fill('X');
     await page.getByRole('button', { name: 'Continue' }).click();
+    await page.getByRole('button', { name: 'Skip for now' }).click();
 
     const sameDate = daysAgo(20);
     await page.locator('input[type="date"]').nth(0).fill(sameDate);
@@ -218,7 +236,7 @@ test.describe('Onboarding – validation guardrails', () => {
     await page.locator('input[type="date"]').nth(1).fill(sameDate);
     await page.getByRole('button', { name: 'Continue' }).click();
 
-    await expect(page.getByText('Step 3 of 3')).toBeVisible();
+    await expect(page.getByText('Step 4 of 4')).toBeVisible();
     expect(alertMsg.toLowerCase()).toContain('duplicate');
   });
 
@@ -226,6 +244,7 @@ test.describe('Onboarding – validation guardrails', () => {
     await page.getByRole('button', { name: 'Continue' }).click();
     await page.getByPlaceholder('Enter your name').fill('X');
     await page.getByRole('button', { name: 'Continue' }).click();
+    await page.getByRole('button', { name: 'Skip for now' }).click();
 
     await page.getByRole('button', { name: '+ Add another date' }).click();
     await expect(page.locator('input[type="date"]')).toHaveCount(2);
@@ -246,7 +265,7 @@ test.describe('Dashboard – core elements', () => {
     await expect(page.getByText('Next prediction')).toBeVisible();
     await expect(page.getByText('Fertile window')).toBeVisible();
     await expect(page.getByText('Phase insights')).toBeVisible();
-    await expect(page.getByText('Personalization')).toBeVisible();
+    await expect(page.getByText('Settings')).toBeVisible();
   });
 
   test('"Add today\'s start" creates an entry', async ({ page }) => {
@@ -518,7 +537,7 @@ test.describe('Navigation', () => {
   test('nav links work correctly', async ({ page }) => {
     await completeOnboardingWithDates(page);
 
-    await page.getByRole('link', { name: /daily log/i }).click();
+    await page.locator('.nav').getByRole('link', { name: /^log$/i }).click();
     await expect(page).toHaveURL(/\/daily-log/);
 
     await page.getByRole('link', { name: /history/i }).click();
@@ -549,6 +568,7 @@ test.describe('Predictions & phases', () => {
     await page.getByRole('button', { name: 'Continue' }).click();
     await page.getByPlaceholder('Enter your name').fill('X');
     await page.getByRole('button', { name: 'Continue' }).click();
+    await page.getByRole('button', { name: 'Skip for now' }).click();
     await page.locator('input[type="date"]').first().fill(daysAgo(30));
     await page.getByRole('button', { name: 'Continue' }).click();
     await expect(page.getByRole('heading', { name: 'Add more dates' })).toBeVisible();
@@ -579,6 +599,9 @@ test.describe('Predictions & phases', () => {
 test.describe('Personalization', () => {
   test('avatar can be changed', async ({ page }) => {
     await completeOnboardingWithDates(page);
+    await page.goto('/settings');
+    // Expand Profile section (collapsed by default)
+    await page.getByText('Profile & Personalization').click();
     const select = page.locator('select').filter({ has: page.locator('option[value="🌼"]') });
     if ((await select.count()) > 0) {
       await select.first().selectOption('🌼');
@@ -588,6 +611,9 @@ test.describe('Personalization', () => {
 
   test('name can be edited in personalization', async ({ page }) => {
     await completeOnboardingWithDates(page);
+    await page.goto('/settings');
+    // Expand Profile section (collapsed by default)
+    await page.getByText('Profile & Personalization').click();
     const nameInput = page.locator('.form-grid input[type="text"]').first();
     await nameInput.fill('Updated');
     await expect(page.getByText('Hi, Updated')).toBeVisible();
@@ -617,6 +643,7 @@ test.describe('Edge cases & regressions', () => {
     await page.getByRole('button', { name: 'Continue' }).click();
     await page.getByPlaceholder('Enter your name').fill('Solo');
     await page.getByRole('button', { name: 'Continue' }).click();
+    await page.getByRole('button', { name: 'Skip for now' }).click();
     await page.locator('input[type="date"]').first().fill(daysAgo(15));
     await page.getByRole('button', { name: 'Continue' }).click();
 
@@ -645,6 +672,124 @@ test.describe('Edge cases & regressions', () => {
     await page.locator('[data-field="stress"][data-value="high"]').click();
     await page.locator('[data-field="sleepBand"][data-value="lt6"]').click();
     await page.goto('/dashboard');
-    await expect(page.getByText(/stress|sleep/i)).toBeVisible();
+    await expect(page.getByText(/stress|sleep/i).first()).toBeVisible();
+  });
+});
+
+/* ══════════════════════════════════════════════════════
+   12. ANALYTICS PAGE
+   ══════════════════════════════════════════════════════ */
+
+test.describe('Analytics page', () => {
+  test('analytics page loads with stats after onboarding', async ({ page }) => {
+    await completeOnboardingWithDates(page);
+    await page.goto('/analytics');
+    await expect(page.getByRole('heading', { name: 'Analytics' })).toBeVisible();
+    await expect(page.getByText('Cycles Tracked')).toBeVisible();
+    await expect(page.getByText('Average Cycle')).toBeVisible();
+  });
+
+  test('streak counter shows on analytics page', async ({ page }) => {
+    await completeOnboardingWithDates(page);
+    await page.goto('/analytics');
+    await expect(page.getByText('day logging streak')).toBeVisible();
+  });
+
+  test('cycle history table displays entries', async ({ page }) => {
+    await completeOnboardingWithDates(page);
+    await page.goto('/analytics');
+    await expect(page.getByText('Cycle history')).toBeVisible();
+  });
+
+  test('analytics nav link works', async ({ page }) => {
+    await completeOnboardingWithDates(page);
+    await page.getByRole('link', { name: /analytics/i }).click();
+    await expect(page).toHaveURL(/\/analytics/);
+  });
+});
+
+/* ══════════════════════════════════════════════════════
+   13. SETTINGS PAGE
+   ══════════════════════════════════════════════════════ */
+
+test.describe('Settings page', () => {
+  test('settings page loads with collapsible sections', async ({ page }) => {
+    await completeOnboardingWithDates(page);
+    await page.goto('/settings');
+    await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
+    await expect(page.getByText('Profile & Personalization')).toBeVisible();
+    await expect(page.getByText('Medical & Conditions')).toBeVisible();
+  });
+
+  test('profile section expands and shows fields', async ({ page }) => {
+    await completeOnboardingWithDates(page);
+    await page.goto('/settings');
+    await page.getByText('Profile & Personalization').click();
+    await expect(page.locator('.form-grid input[type="text"]').first()).toBeVisible();
+    await expect(page.getByText('Hi, Test User')).toBeVisible();
+  });
+
+  test('theme toggle switches appearance', async ({ page }) => {
+    await completeOnboardingWithDates(page);
+    await page.goto('/settings');
+    // Click the dark theme button
+    await page.locator('.theme-btn', { hasText: 'Dark' }).click();
+    const theme = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
+    expect(theme).toBe('dark');
+    // Click light theme button
+    await page.locator('.theme-btn', { hasText: 'Light' }).click();
+    const theme2 = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
+    expect(theme2).toBe('light');
+  });
+
+  test('data export buttons are available', async ({ page }) => {
+    await completeOnboardingWithDates(page);
+    await page.goto('/settings');
+    await page.getByText('Data & Backup').click();
+    await expect(page.getByRole('button', { name: /Export JSON/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Export CSV/i })).toBeVisible();
+  });
+});
+
+/* ══════════════════════════════════════════════════════
+   14. ONBOARDING – PROFILE STEP
+   ══════════════════════════════════════════════════════ */
+
+test.describe('Onboarding – profile step', () => {
+  test('profile step shows medical fields', async ({ page }) => {
+    await page.getByRole('button', { name: 'Continue' }).click();
+    await page.getByPlaceholder('Enter your name').fill('Alice');
+    await page.getByRole('button', { name: 'Continue' }).click();
+    await expect(page.getByText('Step 3 of 4')).toBeVisible();
+    await expect(page.getByText('Tell us a bit about you')).toBeVisible();
+    await expect(page.getByText('Age group')).toBeVisible();
+    await expect(page.getByText('PCOS')).toBeVisible();
+  });
+
+  test('skip button bypasses profile step', async ({ page }) => {
+    await page.getByRole('button', { name: 'Continue' }).click();
+    await page.getByPlaceholder('Enter your name').fill('Alice');
+    await page.getByRole('button', { name: 'Continue' }).click();
+    await page.getByRole('button', { name: 'Skip for now' }).click();
+    await expect(page.getByText('Step 4 of 4')).toBeVisible();
+    await expect(page.getByText('Add your recent start dates')).toBeVisible();
+  });
+});
+
+/* ══════════════════════════════════════════════════════
+   15. DAILY LOG – NOTES
+   ══════════════════════════════════════════════════════ */
+
+test.describe('Daily Log – notes', () => {
+  test('notes textarea is visible on daily log', async ({ page }) => {
+    await page.goto('/daily-log');
+    await expect(page.locator('textarea.notes-textarea')).toBeVisible();
+  });
+
+  test('notes persist after reload', async ({ page }) => {
+    await page.goto('/daily-log');
+    await page.locator('textarea.notes-textarea').fill('Took ibuprofen for cramps');
+    await page.reload();
+    await expect(page.locator('textarea.notes-textarea')).toHaveValue('Took ibuprofen for cramps');
   });
 });

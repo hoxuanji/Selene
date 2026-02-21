@@ -10,7 +10,7 @@ const toLocalDateString = (date: Date) => {
 };
 
 export const Onboarding: React.FC = () => {
-  const [step, setStep] = useState<'initial' | 'name' | 'dates'>('initial');
+  const [step, setStep] = useState<'initial' | 'name' | 'profile' | 'dates'>('initial');
   const [dates, setDates] = useState<string[]>(['']);
   const [dateErrors, setDateErrors] = useState<string[]>([]);
   const navigate = useNavigate();
@@ -18,6 +18,10 @@ export const Onboarding: React.FC = () => {
   const profile = usePeriodStore(state => state.profile);
   const setProfile = usePeriodStore(state => state.setProfile);
   const [userName, setUserName] = useState(profile.userName || '');
+  const [ageGroup, setAgeGroup] = useState(profile.ageGroup);
+  const [pcos, setPcos] = useState(profile.pcos);
+  const [thyroid, setThyroid] = useState(profile.thyroid);
+  const [birthControl, setBirthControl] = useState(profile.birthControl);
   const trimmedDates = useMemo(
     () => dates.filter(date => date.trim() !== ''),
     [dates]
@@ -123,7 +127,7 @@ export const Onboarding: React.FC = () => {
 
             <div className="card">
               <p className="section-title">
-                Step {step === 'initial' ? '1' : step === 'name' ? '2' : '3'} of 3
+                Step {step === 'initial' ? '1' : step === 'name' ? '2' : step === 'profile' ? '3' : '4'} of 4
               </p>
 
               {step === 'initial' ? (
@@ -172,10 +176,72 @@ export const Onboarding: React.FC = () => {
                           return;
                         }
                         setProfile({ ...profile, userName: userName.trim() });
-                        setStep('dates');
+                        setStep('profile');
                       }}
                     >
                       Continue
+                    </button>
+                  </div>
+                </div>
+              ) : step === 'profile' ? (
+                <div>
+                  <h2 style={{ marginTop: 0 }}>Tell us a bit about you</h2>
+                  <p style={{ color: '#6a6b76' }}>
+                    This helps us personalize predictions and alerts. You can always change these in Settings.
+                  </p>
+                  <div style={{ marginTop: 20, display: 'grid', gap: 16 }}>
+                    <label className="form-field">
+                      <span className="label-icon">🎂</span> Age group
+                      <select className="input" value={ageGroup}
+                        onChange={(e) => setAgeGroup(e.target.value as typeof ageGroup)}>
+                        <option value="under18">Under 18</option>
+                        <option value="18-24">18–24</option>
+                        <option value="25-34">25–34</option>
+                        <option value="35-44">35–44</option>
+                        <option value="45plus">45+</option>
+                      </select>
+                    </label>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                      <label className="form-field">
+                        <span className="label-icon">🧬</span> PCOS
+                        <select className="input" value={pcos ? 'yes' : 'no'}
+                          onChange={(e) => setPcos(e.target.value === 'yes')}>
+                          <option value="no">No</option>
+                          <option value="yes">Yes</option>
+                        </select>
+                      </label>
+                      <label className="form-field">
+                        <span className="label-icon">🧪</span> Thyroid
+                        <select className="input" value={thyroid ? 'yes' : 'no'}
+                          onChange={(e) => setThyroid(e.target.value === 'yes')}>
+                          <option value="no">No</option>
+                          <option value="yes">Yes</option>
+                        </select>
+                      </label>
+                    </div>
+                    <label className="form-field">
+                      <span className="label-icon">💊</span> Birth control
+                      <select className="input" value={birthControl ? 'yes' : 'no'}
+                        onChange={(e) => setBirthControl(e.target.value === 'yes')}>
+                        <option value="no">No</option>
+                        <option value="yes">Yes</option>
+                      </select>
+                    </label>
+                  </div>
+                  <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
+                    <button className="btn btn-ghost" onClick={() => setStep('name')}>
+                      Back
+                    </button>
+                    <button className="btn btn-primary" onClick={() => {
+                      setProfile({ ...profile, ageGroup, pcos, thyroid, birthControl });
+                      setStep('dates');
+                    }}>
+                      Continue
+                    </button>
+                    <button className="btn btn-ghost" onClick={() => {
+                      setStep('dates');
+                    }} style={{ marginLeft: 'auto', fontSize: 13 }}>
+                      Skip for now
                     </button>
                   </div>
                 </div>
@@ -230,7 +296,7 @@ export const Onboarding: React.FC = () => {
                   </button>
 
                   <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
-                    <button className="btn btn-ghost" onClick={() => setStep('name')}>
+                    <button className="btn btn-ghost" onClick={() => setStep('profile')}>
                       Back
                     </button>
                     <button className="btn btn-primary" onClick={handleSubmit}>

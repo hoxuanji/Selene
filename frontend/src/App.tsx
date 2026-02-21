@@ -11,6 +11,8 @@ import { Onboarding } from './pages/Onboarding';
 import { Dashboard } from './pages/Dashboard';
 import { History } from './pages/History';
 import { DailyLog } from './pages/DailyLog';
+import { Analytics as AnalyticsPage } from './pages/Analytics';
+import { Settings } from './pages/Settings';
 import { getAllPeriods, getAllDailyLogs } from './db';
 import { startReminderCheck, getNotificationPrefs } from './utils/notifications';
 import { InstallPrompt } from './components/InstallPrompt';
@@ -108,6 +110,22 @@ function App() {
             </Shell>
           }
         />
+        <Route
+          path="/analytics"
+          element={
+            <Shell>
+              <AnalyticsPage />
+            </Shell>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <Shell>
+              <Settings />
+            </Shell>
+          }
+        />
       </Routes>
       <Analytics />
     </BrowserRouter>
@@ -134,6 +152,22 @@ const Shell: React.FC<{ children: React.ReactNode }> = ({ children }) => (
             Dashboard
           </NavLink>
           <NavLink
+            to="/analytics"
+            className={({ isActive }) =>
+              `nav-link${isActive ? ' active' : ''}`
+            }
+          >
+            Analytics
+          </NavLink>
+          <NavLink
+            to="/daily-log"
+            className={({ isActive }) =>
+              `nav-link${isActive ? ' active' : ''}`
+            }
+          >
+            Log
+          </NavLink>
+          <NavLink
             to="/history"
             className={({ isActive }) =>
               `nav-link${isActive ? ' active' : ''}`
@@ -142,12 +176,12 @@ const Shell: React.FC<{ children: React.ReactNode }> = ({ children }) => (
             History
           </NavLink>
           <NavLink
-            to="/daily-log"
+            to="/settings"
             className={({ isActive }) =>
               `nav-link${isActive ? ' active' : ''}`
             }
           >
-            Daily Log
+            ⚙️
           </NavLink>
         </nav>
       </div>

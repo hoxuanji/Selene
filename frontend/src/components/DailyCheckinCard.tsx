@@ -163,6 +163,20 @@ export const DailyCheckinCard: React.FC<DailyCheckinCardProps> = ({
           />
         )}
       </div>
+
+      {/* Notes */}
+      <div style={{ marginTop: 20 }}>
+        <div className="checkin-group">
+          <div className="checkin-group-title">Notes</div>
+          <textarea
+            className="input notes-textarea"
+            placeholder="Anything to note today? Medication, symptoms, thoughts..."
+            value={log?.notes || ''}
+            onChange={(e) => onSelect('notes', e.target.value)}
+            rows={3}
+          />
+        </div>
+      </div>
     </div>
   );
 };

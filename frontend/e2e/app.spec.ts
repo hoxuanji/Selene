@@ -31,6 +31,8 @@ const completeOnboardingWithDates = async (page: Page) => {
   await page.getByRole('button', { name: 'Continue' }).click();
   await page.getByPlaceholder('Enter your name').fill('Test User');
   await page.getByRole('button', { name: 'Continue' }).click();
+  // Skip profile step (step 3 of 4)
+  await page.getByRole('button', { name: 'Skip for now' }).click();
 
   const dateInputs = page.locator('input[type="date"]');
   await dateInputs.nth(0).fill('2025-12-05');

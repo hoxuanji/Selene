@@ -24,6 +24,7 @@ export interface DailyLog {
   sleepBand?: SleepBand;
   stress?: Stress;
   flow?: Flow;
+  notes?: string;
   createdAt: string;
 }
 
@@ -84,6 +85,7 @@ export async function upsertDailyLog(log: Omit<DailyLog, 'id' | 'userId' | 'crea
     sleepBand: log.sleepBand,
     stress: log.stress,
     flow: log.flow ?? 'none',
+    notes: log.notes,
     createdAt: existing?.createdAt ?? new Date().toISOString()
   };
 
