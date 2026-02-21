@@ -1,10 +1,20 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { DailyCheckinCard } from '../components/DailyCheckinCard';
 import { usePeriodStore } from '../store';
 import type { DailyLog as DailyLogEntry } from '../db';
 
 export const DailyLog: React.FC = () => {
-  const { dailyLogs, dailyLogsError, loadDailyLogsFromDB, upsertDailyLog } = usePeriodStore();
+  const {
+    periods,
+    periodEntries,
+    dailyLogs,
+    dailyLogsError,
+    loadPeriodsFromDB,
+    loadDailyLogsFromDB,
+    upsertDailyLog,
+    addPeriodToStore,
+    removePeriod
+  } = usePeriodStore();
   const toLocalDateString = (date: Date) => {
     const year = date.getFullYear();
     const month = `${date.getMonth() + 1}`.padStart(2, '0');
@@ -18,6 +28,7 @@ export const DailyLog: React.FC = () => {
 
   useEffect(() => {
     loadDailyLogsFromDB();
+    loadPeriodsFromDB();
   }, []);
 
   const selectedLog = useMemo(
@@ -41,10 +52,14 @@ export const DailyLog: React.FC = () => {
     value: DailyLogEntry[keyof DailyLogEntry]
   ) => {
     if (!draftLog) return;
-    const nextLog: DailyLogEntry = {
+    let nextLog: DailyLogEntry = {
       ...draftLog,
       [field]: value
     };
+    // When period starts, clear mucus — not observable during bleeding
+    if (field === 'flow' && value && value !== 'none' && nextLog.mucus) {
+      nextLog = { ...nextLog, mucus: undefined };
+    }
     setDraftLog(nextLog);
     await upsertDailyLog(nextLog);
   };
@@ -67,12 +82,31 @@ export const DailyLog: React.FC = () => {
 
   const isToday = selectedDate === toLocalDateString(new Date());
 
+  // Calendar ↔ Daily log period sync
+  const isCalendarPeriod = useMemo(
+    () => periods.includes(selectedDate),
+    [periods, selectedDate]
+  );
+
+  const handlePeriodSync = useCallback(async (active: boolean) => {
+    if (active && !periods.includes(selectedDate)) {
+      // Add to calendar
+      await addPeriodToStore(selectedDate);
+    } else if (!active && periods.includes(selectedDate)) {
+      // Remove from calendar
+      const entry = periodEntries.find(e => e.startDate === selectedDate);
+      if (entry) {
+        await removePeriod(entry.id, selectedDate);
+      }
+    }
+  }, [selectedDate, periods, periodEntries, addPeriodToStore, removePeriod]);
+
   return (
     <div>
       <div className="page-header">
         <div>
           <h1 className="page-title">Daily Log</h1>
-          <div className="badge">Fast, tap-only check-in</div>
+          <div className="badge">🌸 Quick tap check-in</div>
         </div>
         <div className="date-switch">
           <button className="btn btn-ghost" onClick={() => handleShiftDay(-1)}>
@@ -91,13 +125,15 @@ export const DailyLog: React.FC = () => {
         dateLabel={dateLabel}
         log={draftLog}
         onSelect={handleUpdate}
+        isCalendarPeriod={isCalendarPeriod}
+        onPeriodSync={handlePeriodSync}
       />
 
       {dailyLogsError && <div className="alert">⚠️ {dailyLogsError}</div>}
 
       <div className="card" style={{ marginTop: 24 }}>
-        <p className="section-title">Why it matters</p>
-        <p style={{ margin: 0, color: '#6a6b76' }}>
+        <p className="section-title">💡 Why it matters</p>
+        <p style={{ margin: 0, color: 'var(--muted)' }}>
           Logging symptoms helps confirm ovulation, refine phase labels, and boost
           prediction confidence without disrupting your existing flow.
         </p>
