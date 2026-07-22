@@ -186,11 +186,11 @@ export const Calendar: React.FC<CalendarProps> = ({
 
       <div className="legend" style={{ marginTop: 16 }}>
         <span>
-          <span className="legend-swatch" style={{ background: 'color-mix(in srgb, var(--primary) 30%, var(--card))' }}></span>
+          <span className="legend-swatch" style={{ background: 'color-mix(in srgb, var(--phase-menstrual) 32%, var(--card))' }}></span>
           Period date
         </span>
         <span>
-          <span className="legend-swatch" style={{ background: 'var(--card)', boxShadow: 'inset 0 0 0 2px color-mix(in srgb, var(--primary) 40%, transparent)' }}></span>
+          <span className="legend-swatch" style={{ background: 'var(--card)', boxShadow: 'inset 0 0 0 2px color-mix(in srgb, var(--phase-menstrual) 42%, transparent)' }}></span>
           Predicted range
         </span>
         <span>
@@ -202,7 +202,7 @@ export const Calendar: React.FC<CalendarProps> = ({
           Follicular
         </span>
         <span>
-          <span className="legend-swatch" style={{ background: 'color-mix(in srgb, var(--phase-ovulation) 30%, var(--card))' }}></span>
+          <span className="legend-swatch" style={{ background: 'color-mix(in srgb, var(--phase-ovulation) 34%, var(--card))' }}></span>
           Ovulation phase
         </span>
         <span>
@@ -210,7 +210,7 @@ export const Calendar: React.FC<CalendarProps> = ({
           Luteal
         </span>
         <span>
-          <span className="legend-swatch" style={{ background: 'var(--phase-ovulation-bg)', boxShadow: 'inset 0 0 0 2px color-mix(in srgb, var(--phase-ovulation) 45%, transparent)' }}></span>
+          <span className="legend-swatch" style={{ background: 'var(--phase-fertile-bg)', boxShadow: 'inset 0 0 0 2px color-mix(in srgb, var(--phase-fertile) 40%, transparent)' }}></span>
           Fertile days
         </span>
         <span>

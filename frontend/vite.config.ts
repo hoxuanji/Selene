@@ -18,8 +18,8 @@ export default defineConfig({
         short_name: 'Selene',
         description:
           'Private, on-device period & cycle tracker with daily check-ins and smart predictions.',
-        theme_color: '#b23e66',
-        background_color: '#ebe7e1',
+        theme_color: '#f4f1ea',
+        background_color: '#f4f1ea',
         display: 'standalone',
         orientation: 'portrait',
         start_url: '/',

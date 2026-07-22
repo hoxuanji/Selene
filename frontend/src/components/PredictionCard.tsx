@@ -11,7 +11,9 @@ export const PredictionCard: React.FC<PredictionCardProps> = ({ predictedRange, 
     return (
       <div className="card">
         <p className="section-title">Next prediction</p>
-        <p>Loading prediction...</p>
+        <div className="skeleton" style={{ height: 26, width: '60%', margin: '6px auto 12px' }} />
+        <div className="skeleton" style={{ height: 12, width: '42%', margin: '0 auto 18px' }} />
+        <div className="skeleton" style={{ height: 8, width: '100%' }} />
       </div>
     );
   }
