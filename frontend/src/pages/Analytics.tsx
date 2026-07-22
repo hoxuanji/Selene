@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo } from 'react';
 import { usePeriodStore } from '../store';
 import type { DailyLog } from '../db';
+import { collapsePeriodStarts } from '../utils/predictor';
 
 export const Analytics: React.FC = () => {
   const { periods, dailyLogs, loadPeriodsFromDB, loadDailyLogsFromDB } = usePeriodStore();
@@ -10,18 +11,15 @@ export const Analytics: React.FC = () => {
     loadDailyLogsFromDB();
   }, []);
 
-  /* ---- Cycle lengths ---- */
+  /* ---- Cycle lengths (start-to-start, bleeding days collapsed) ---- */
   const cycleLengths = useMemo(() => {
-    if (periods.length < 2) return [];
-    const sorted = [...periods].sort();
+    const starts = collapsePeriodStarts(periods);
     const lengths: { from: string; to: string; days: number }[] = [];
-    for (let i = 1; i < sorted.length; i++) {
-      const prev = new Date(sorted[i - 1]).getTime();
-      const curr = new Date(sorted[i]).getTime();
+    for (let i = 1; i < starts.length; i++) {
+      const prev = new Date(starts[i - 1]).getTime();
+      const curr = new Date(starts[i]).getTime();
       const days = Math.round((curr - prev) / (1000 * 60 * 60 * 24));
-      if (days >= 4) { // filter out consecutive period days
-        lengths.push({ from: sorted[i - 1], to: sorted[i], days });
-      }
+      lengths.push({ from: starts[i - 1], to: starts[i], days });
     }
     return lengths;
   }, [periods]);
@@ -58,7 +56,8 @@ export const Analytics: React.FC = () => {
   /* ---- Symptom patterns by phase ---- */
   const symptomPatterns = useMemo(() => {
     if (dailyLogs.length < 5 || periods.length < 2) return null;
-    const sorted = [...periods].sort();
+    const sorted = collapsePeriodStarts(periods);
+    if (sorted.length < 2) return null;
 
     // Assign each log to a phase based on cycle day
     const phaseMap: Record<string, { moods: string[]; energy: string[]; pain: string[]; stress: string[] }> = {
@@ -148,7 +147,7 @@ export const Analytics: React.FC = () => {
         </div>
         {streak >= 7 && <div className="streak-badge">🏆 Amazing consistency!</div>}
         {streak >= 3 && streak < 7 && <div className="streak-badge">⭐ Keep it up!</div>}
-        {streak === 0 && <div className="streak-badge" style={{ background: '#fff3e0', color: '#e65100' }}>Log today to start a streak</div>}
+        {streak === 0 && <div className="streak-badge" style={{ background: 'var(--warn-bg)', color: 'var(--warn)' }}>Log today to start a streak</div>}
       </div>
 
       {/* ===== Summary Cards ===== */}

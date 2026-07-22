@@ -2,6 +2,8 @@ import React, { useMemo } from 'react';
 import type { DailyLog } from '../db';
 import type { Phase } from '../utils/phaseEngine';
 import type { OvulationSignal } from '../utils/ovulationSignals';
+import { averageCycleLength as computeAverageCycleLength } from '../utils/predictor';
+import { parseLocalDate, todayLocalString } from '../utils/validation';
 
 interface PhaseInsightsProps {
   phase: Phase | null;
@@ -19,21 +21,15 @@ export const PhaseInsights: React.FC<PhaseInsightsProps> = ({
   dailyLogs
 }) => {
   const daysUntilOvulation = useMemo(() => {
-    if (!predictedOvulationDate) return null;
-    const today = new Date();
-    const target = new Date(predictedOvulationDate);
+    const target = parseLocalDate(predictedOvulationDate ?? '');
+    const today = parseLocalDate(todayLocalString());
+    if (!target || !today) return null;
     return Math.round((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
   }, [predictedOvulationDate]);
 
   const lutealAverage = useMemo(() => {
-    if (periods.length < 2) return null;
-    const sorted = [...periods].sort();
-    const cycles = sorted.slice(1).map((date, index) => {
-      const prev = new Date(sorted[index]).getTime();
-      const curr = new Date(date).getTime();
-      return Math.round((curr - prev) / (1000 * 60 * 60 * 24));
-    });
-    const avgCycle = cycles.reduce((a, b) => a + b, 0) / cycles.length;
+    const avgCycle = computeAverageCycleLength(periods);
+    if (!avgCycle) return null;
     return Math.max(8, Math.round(avgCycle - 14));
   }, [periods]);
 

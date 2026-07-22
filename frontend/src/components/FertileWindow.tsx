@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { parseLocalDate, toLocalDateString, todayLocalString } from '../utils/validation';
 
 interface FertileWindowProps {
   predictedOvulationDate?: string | null;
@@ -25,11 +26,11 @@ export function computeFertileWindow(
   let ovDate: Date | null = null;
 
   if (predictedOvulationDate) {
-    ovDate = new Date(predictedOvulationDate);
+    ovDate = parseLocalDate(predictedOvulationDate);
   } else if (lastPeriodDate) {
     const cycle = averageCycleLength && averageCycleLength > 10 ? averageCycleLength : 28;
-    ovDate = new Date(lastPeriodDate);
-    ovDate.setDate(ovDate.getDate() + (cycle - 14));
+    ovDate = parseLocalDate(lastPeriodDate);
+    if (ovDate) ovDate.setDate(ovDate.getDate() + (cycle - 14));
   }
 
   if (!ovDate || isNaN(ovDate.getTime())) return null;
@@ -41,13 +42,13 @@ export function computeFertileWindow(
   for (let i = 0; i <= 5; i++) {
     const d = new Date(fertileStart);
     d.setDate(d.getDate() + i);
-    dates.push(d.toISOString().split('T')[0]);
+    dates.push(toLocalDateString(d));
   }
 
   return {
-    start: fertileStart.toISOString().split('T')[0],
-    end: ovDate.toISOString().split('T')[0],
-    ovulationDate: ovDate.toISOString().split('T')[0],
+    start: toLocalDateString(fertileStart),
+    end: toLocalDateString(ovDate),
+    ovulationDate: toLocalDateString(ovDate),
     dates
   };
 }
@@ -64,10 +65,10 @@ export const FertileWindowCard: React.FC<FertileWindowProps> = ({
 
   const daysUntilFertile = useMemo(() => {
     if (!fertile) return null;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const start = new Date(fertile.start);
-    const end = new Date(fertile.end);
+    const today = parseLocalDate(todayLocalString());
+    const start = parseLocalDate(fertile.start);
+    const end = parseLocalDate(fertile.end);
+    if (!today || !start || !end) return null;
     const diffToStart = Math.ceil((start.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
     const diffToEnd = Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
@@ -85,7 +86,7 @@ export const FertileWindowCard: React.FC<FertileWindowProps> = ({
     return (
       <div className="card card-muted">
         <p className="section-title">Fertile window</p>
-        <p style={{ color: '#6a6b76', margin: 0 }}>
+        <p style={{ color: 'var(--muted)', margin: 0 }}>
           More data needed to estimate fertile window.
         </p>
       </div>
@@ -114,9 +115,7 @@ export const FertileWindowCard: React.FC<FertileWindowProps> = ({
       <div className="fertile-day-row">
         {fertile.dates.map((date, i) => {
           const isOvulation = date === fertile.ovulationDate;
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          const isToday = date === today.toISOString().split('T')[0];
+          const isToday = date === todayLocalString();
           return (
             <div
               key={date}

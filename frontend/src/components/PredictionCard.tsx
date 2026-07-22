@@ -21,7 +21,7 @@ export const PredictionCard: React.FC<PredictionCardProps> = ({ predictedRange, 
       <div className="card card-muted">
         <p className="section-title">Next prediction</p>
         <h3 style={{ margin: 0 }}>Add more dates</h3>
-        <p style={{ color: '#6a6b76', marginTop: '10px' }}>
+        <p style={{ color: 'var(--muted)', marginTop: '10px' }}>
           Add more data to improve prediction
         </p>
       </div>
@@ -50,19 +50,19 @@ export const PredictionCard: React.FC<PredictionCardProps> = ({ predictedRange, 
       <div style={{ marginTop: '12px' }}>
         <p style={{ fontSize: '20px', marginBottom: '4px', textAlign: 'center' }}>
           <strong>
-            <span style={{ color: '#e91e63' }}>
+            <span style={{ color: 'var(--primary)' }}>
               {formatDate(predictedRange.predictedDate)}
             </span>
           </strong>
         </p>
-        <p style={{ fontSize: '12px', color: '#6a6b76', textAlign: 'center', margin: '4px 0 12px' }}>
+        <p style={{ fontSize: '12px', color: 'var(--muted)', textAlign: 'center', margin: '4px 0 12px' }}>
           ±1 day ({formatDateShort(predictedRange.earliest)} – {formatDateShort(predictedRange.latest)})
         </p>
         <div style={{ marginTop: '10px' }}>
-          <div style={{ fontSize: '12px', color: '#6a6b76', marginBottom: '6px' }}>
+          <div style={{ fontSize: '12px', color: 'var(--muted)', marginBottom: '6px' }}>
             Confidence: <strong>{confidence}%</strong>
             {baseConfidence !== null && baseConfidence !== confidence && (
-              <span style={{ marginLeft: 8, color: '#6a6b76' }}>
+              <span style={{ marginLeft: 8, color: 'var(--muted)' }}>
                 (Base {baseConfidence}%)
               </span>
             )}
@@ -72,13 +72,13 @@ export const PredictionCard: React.FC<PredictionCardProps> = ({ predictedRange, 
               style={{
                 width: `${confidence}%`,
                 height: '100%',
-                backgroundColor: '#e91e63',
+                backgroundColor: 'var(--primary)',
                 transition: 'width 0.3s ease'
               }}
             ></div>
           </div>
           {predictedRange.adjustmentNote && (
-            <div style={{ marginTop: 8, fontSize: 12, color: '#6a6b76' }}>
+            <div style={{ marginTop: 8, fontSize: 12, color: 'var(--muted)' }}>
               {predictedRange.adjustmentNote}
             </div>
           )}
@@ -91,7 +91,7 @@ export const PredictionCard: React.FC<PredictionCardProps> = ({ predictedRange, 
 const confidenceBarStyle: React.CSSProperties = {
   width: '100%',
   height: '8px',
-  backgroundColor: '#e0e0e0',
+  backgroundColor: 'var(--border)',
   borderRadius: '4px',
   overflow: 'hidden'
 };

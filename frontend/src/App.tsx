@@ -179,6 +179,7 @@ const Shell: React.FC<{ children: React.ReactNode }> = ({ children }) => (
           </NavLink>
           <NavLink
             to="/settings"
+            aria-label="Settings"
             className={({ isActive }) =>
               `nav-link${isActive ? ' active' : ''}`
             }

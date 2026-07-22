@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import type { Phase } from '../utils/phaseEngine';
+import { parseLocalDate, todayLocalString } from '../utils/validation';
 
 interface CycleDayCounterProps {
   lastPeriodDate: string | null;
@@ -28,8 +29,9 @@ export const CycleDayCounter: React.FC<CycleDayCounterProps> = ({
 }) => {
   const cycleDay = useMemo(() => {
     if (!lastPeriodDate) return null;
-    const last = new Date(lastPeriodDate);
-    const today = new Date();
+    const last = parseLocalDate(lastPeriodDate);
+    const today = parseLocalDate(todayLocalString());
+    if (!last || !today) return null;
     const diff = Math.floor(
       (today.getTime() - last.getTime()) / (1000 * 60 * 60 * 24)
     );
@@ -47,7 +49,7 @@ export const CycleDayCounter: React.FC<CycleDayCounterProps> = ({
     return (
       <div className="card card-muted">
         <p className="section-title">Cycle day</p>
-        <p style={{ color: '#6a6b76', margin: 0 }}>
+        <p style={{ color: 'var(--muted)', margin: 0 }}>
           Add a period start date to begin tracking.
         </p>
       </div>
@@ -70,16 +72,16 @@ export const CycleDayCounter: React.FC<CycleDayCounterProps> = ({
         </span>
       </div>
       {isSkippedCycle ? (
-        <div style={{ background: '#fce4ec', borderRadius: 8, padding: '10px 14px', margin: '8px 0' }}>
-          <span style={{ fontSize: 13, color: '#b71c1c' }}>
+        <div className="alert alert-danger" style={{ margin: '8px 0', fontSize: 13, alignItems: 'flex-start' }}>
+          <span>
             🚨 <strong>Possible skipped cycle:</strong> It has been {cycleDay} days since your last period.
             A gap of more than 45 days may indicate pregnancy, significant hormonal changes, or other
             medical conditions. If this is unexpected, please consider consulting a healthcare provider.
           </span>
         </div>
       ) : isCycleOverdue ? (
-        <div style={{ background: '#fff8e1', borderRadius: 8, padding: '8px 12px', margin: '8px 0' }}>
-          <span style={{ fontSize: 13, color: '#f57f17' }}>
+        <div className="alert alert-warn" style={{ margin: '8px 0', fontSize: 13, alignItems: 'flex-start' }}>
+          <span>
             📌 Day {cycleDay} is past your usual ~{cycleLength}-day cycle.
             This can be a normal delay (cycles of 4–45 days are common).
             Your period may be arriving soon — or log a new start date if it already has.

@@ -1,51 +1,107 @@
 :root {
   color-scheme: light;
-  --bg: #f7f5ff;
+
+  /* Surfaces — warm greige canvas so white cards read as elevated surfaces */
+  --bg: #ebe7e1;
   --card: #ffffff;
-  --card-alt: #fcfcff;
-  --text: #1b1b1f;
-  --muted: #6a6b76;
-  --primary: #e91e63;
-  --primary-600: #c2185b;
-  --primary-100: #fde4ef;
-  --accent: #6c5ce7;
-  --border: #ececf3;
-  --shadow: 0 10px 30px rgba(26, 26, 32, 0.08);
-  --input-bg: #fff;
+  --card-alt: #f5f2ee;
+  --text: #201d27;
+  --muted: #6a6673;
+
+  /* Brand — confident berry-rose (text / tint-foreground) */
+  --primary: #b23e66;
+  --primary-600: #8f2f52;
+  --primary-100: #f7e4ec;
+
+  /* Brand — solid fill + its foreground (buttons, FAB, banners) */
+  --primary-solid: #b23e66;
+  --on-primary: #ffffff;
+
+  /* Accent — deep slate-violet (focus ring, "today", subtle depth) */
+  --accent: #6a6486;
+
+  --border: #e4dfe7;
+
+  --radius-lg: 20px;
+  --radius-md: 14px;
+  --radius-sm: 10px;
+
+  /* Defined but soft layered elevation */
+  --shadow: 0 1px 3px rgba(32, 29, 39, 0.06), 0 14px 34px rgba(32, 29, 39, 0.10);
+  --input-bg: #ffffff;
+
+  /* Semantic — rich enough to read, still AA on card */
+  --success: #2f7d54;  --success-bg: rgba(47, 125, 84, 0.12);
+  --warn: #925f22;     --warn-bg: rgba(146, 95, 34, 0.12);
+  --danger: #a5324a;   --danger-bg: rgba(165, 50, 74, 0.12);
+
+  /* Cycle phases — text passes AA; tints are backgrounds only */
+  --phase-menstrual: #a8375e;   --phase-menstrual-bg: rgba(168, 55, 94, 0.14);
+  --phase-follicular: #3a6b9c;  --phase-follicular-bg: rgba(58, 107, 156, 0.14);
+  --phase-ovulation: #2f7d56;   --phase-ovulation-bg: rgba(47, 125, 86, 0.16);
+  --phase-luteal: #79548c;      --phase-luteal-bg: rgba(121, 84, 140, 0.14);
 }
 
-/* Dark mode */
+/* Dark mode — deep warm charcoal, richer accent */
 [data-theme="dark"] {
   color-scheme: dark;
-  --bg: #16161e;
-  --card: #1f1f2b;
-  --card-alt: #282838;
-  --text: #ededf4;
-  --muted: #a5a5b8;
-  --primary: #f48fb1;
-  --primary-600: #f06292;
-  --primary-100: rgba(244, 143, 177, 0.14);
-  --accent: #b8a9ff;
-  --border: #33334a;
-  --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
-  --input-bg: #282838;
+  --bg: #141118;
+  --card: #1e1a24;
+  --card-alt: #282331;
+  --text: #f1eef5;
+  --muted: #ada8b7;
+
+  --primary: #ec9fbb;
+  --primary-600: #f4bcd0;
+  --primary-100: rgba(236, 159, 187, 0.16);
+
+  --primary-solid: #bf4a72;
+  --on-primary: #ffffff;
+
+  --accent: #b3a9d2;
+  --border: #38333f;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.4), 0 16px 38px rgba(0, 0, 0, 0.5);
+  --input-bg: #282331;
+
+  --success: #74c496;  --success-bg: rgba(116, 196, 150, 0.16);
+  --warn: #e0b06a;     --warn-bg: rgba(224, 176, 106, 0.16);
+  --danger: #ef8fa4;   --danger-bg: rgba(239, 143, 164, 0.18);
+
+  --phase-menstrual: #ef8fac;   --phase-menstrual-bg: rgba(239, 143, 172, 0.18);
+  --phase-follicular: #94bce4;  --phase-follicular-bg: rgba(148, 188, 228, 0.16);
+  --phase-ovulation: #8fceaa;   --phase-ovulation-bg: rgba(143, 206, 170, 0.16);
+  --phase-luteal: #c6a6d9;      --phase-luteal-bg: rgba(198, 166, 217, 0.16);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --bg: #16161e;
-    --card: #1f1f2b;
-    --card-alt: #282838;
-    --text: #ededf4;
-    --muted: #a5a5b8;
-    --primary: #f48fb1;
-    --primary-600: #f06292;
-    --primary-100: rgba(244, 143, 177, 0.14);
-    --accent: #b8a9ff;
-    --border: #33334a;
-    --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
-    --input-bg: #282838;
+    --bg: #141118;
+    --card: #1e1a24;
+    --card-alt: #282331;
+    --text: #f1eef5;
+    --muted: #ada8b7;
+
+    --primary: #ec9fbb;
+    --primary-600: #f4bcd0;
+    --primary-100: rgba(236, 159, 187, 0.16);
+
+    --primary-solid: #bf4a72;
+    --on-primary: #ffffff;
+
+    --accent: #b3a9d2;
+    --border: #38333f;
+    --shadow: 0 1px 3px rgba(0, 0, 0, 0.4), 0 16px 38px rgba(0, 0, 0, 0.5);
+    --input-bg: #282331;
+
+    --success: #74c496;  --success-bg: rgba(116, 196, 150, 0.16);
+    --warn: #e0b06a;     --warn-bg: rgba(224, 176, 106, 0.16);
+    --danger: #ef8fa4;   --danger-bg: rgba(239, 143, 164, 0.18);
+
+    --phase-menstrual: #ef8fac;   --phase-menstrual-bg: rgba(239, 143, 172, 0.18);
+    --phase-follicular: #94bce4;  --phase-follicular-bg: rgba(148, 188, 228, 0.16);
+    --phase-ovulation: #8fceaa;   --phase-ovulation-bg: rgba(143, 206, 170, 0.16);
+    --phase-luteal: #c6a6d9;      --phase-luteal-bg: rgba(198, 166, 217, 0.16);
   }
 }
 
@@ -58,6 +114,27 @@ body {
   font-family: 'Inter', 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background: var(--bg);
   color: var(--text);
+  line-height: 1.55;
+  letter-spacing: -0.006em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Calm, consistent keyboard focus ring across every control (WCAG 2.4.7).
+   Zero-specificity :where() so no component rule needs touching. */
+:where(a, button, .btn, .nav-link, .log-chip, .chip, .calendar-button,
+  .settings-toggle, .theme-btn, input, select, textarea):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Subtle tactile press feedback for the touch-first UI (guarded by
+   the prefers-reduced-motion block below). */
+:where(.btn, .chip, .log-chip, .calendar-button, .theme-btn, .nav-link):active {
+  transform: scale(0.97);
+  transition-duration: 0.05s;
 }
 
 a {
@@ -152,7 +229,7 @@ a {
   align-items: center;
   gap: 12px;
   padding: 12px 20px;
-  background: linear-gradient(135deg, var(--primary-100) 0%, #ede7f6 100%);
+  background: var(--card-alt);
   border-bottom: 1px solid var(--border);
   font-size: 14px;
 }
@@ -179,17 +256,17 @@ a {
   padding: 8px 18px;
   border: none;
   border-radius: 999px;
-  background: var(--primary);
-  color: #fff;
+  background: var(--primary-solid);
+  color: var(--on-primary);
   font-weight: 600;
   font-size: 13px;
   cursor: pointer;
   white-space: nowrap;
-  transition: background 0.15s;
+  transition: opacity 0.15s;
 }
 
 .install-banner-btn:hover {
-  background: var(--primary-600);
+  opacity: 0.9;
 }
 
 .install-banner-close {
@@ -260,8 +337,8 @@ a {
   padding: 6px 16px;
   border: none;
   border-radius: 999px;
-  background: var(--primary);
-  color: #fff;
+  background: var(--primary-solid);
+  color: var(--on-primary);
   font-weight: 600;
   font-size: 13px;
   cursor: pointer;
@@ -299,12 +376,14 @@ a {
 .page-title {
   margin: 0;
   font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
 .card {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 18px;
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow);
   padding: 24px;
 }
@@ -325,21 +404,21 @@ a {
 .btn {
   border: none;
   padding: 12px 18px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   font-weight: 600;
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
 .btn-primary {
-  background: var(--primary);
-  color: white;
-  box-shadow: 0 10px 20px rgba(233, 30, 99, 0.2);
+  background: var(--primary-solid);
+  color: var(--on-primary);
+  box-shadow: 0 2px 8px rgba(43, 39, 51, 0.10);
 }
 
 .btn-primary:hover {
   transform: translateY(-1px);
-  background: var(--primary-600);
+  box-shadow: 0 6px 18px rgba(43, 39, 51, 0.12);
 }
 
 .btn-ghost {
@@ -354,8 +433,8 @@ a {
 }
 
 .btn-danger {
-  background: #ff6b6b;
-  color: white;
+  background: var(--danger);
+  color: #fff;
 }
 
 .grid {
@@ -417,8 +496,8 @@ a {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(108, 92, 231, 0.12);
-  box-shadow: inset 0 0 0 1px rgba(108, 92, 231, 0.25);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 26%, transparent);
 }
 
 .avatar-emoji {
@@ -433,16 +512,18 @@ a {
 .input {
   width: 100%;
   padding: 10px 12px;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   font: inherit;
   color: var(--text);
   background: var(--input-bg);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .input:focus {
-  outline: 2px solid rgba(108, 92, 231, 0.2);
-  border-color: rgba(108, 92, 231, 0.4);
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
 }
 
 .badge {
@@ -462,19 +543,37 @@ a {
   align-items: center;
   gap: 10px;
   padding: 12px 16px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: var(--primary-100);
   color: var(--primary);
-  border: 1px solid rgba(244, 143, 177, 0.2);
+  border: 1px solid color-mix(in srgb, var(--primary) 22%, transparent);
   font-size: 14px;
+}
+
+/* Severity variants so a gentle nudge never looks like a medical flag. */
+.alert-info {
+  background: var(--card-alt);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.alert-warn {
+  background: var(--warn-bg);
+  color: var(--warn);
+  border-color: color-mix(in srgb, var(--warn) 30%, transparent);
+}
+
+.alert-danger {
+  background: var(--danger-bg);
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 30%, transparent);
 }
 
 .calendar {
   border: 1px solid var(--border);
-  border-radius: 22px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
   background: var(--card-alt);
-  backdrop-filter: blur(28px) saturate(160%);
   box-shadow: var(--shadow);
 }
 
@@ -489,7 +588,7 @@ a {
 
 .calendar-grid {
   display: grid;
-  grid-template-columns: repeat(7, minmax(36px, 1fr));
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 8px;
   padding: 16px;
   background: transparent;
@@ -522,13 +621,13 @@ a {
   background: var(--primary-100);
   color: var(--primary);
   font-weight: 700;
-  box-shadow: inset 0 0 0 1px rgba(244, 143, 177, 0.3), 0 8px 14px rgba(233, 30, 99, 0.1);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 30%, transparent);
 }
 
 .calendar-cell.predicted {
-  background: rgba(244, 143, 177, 0.08);
+  background: var(--primary-100);
   color: var(--primary);
-  box-shadow: inset 0 0 0 1px rgba(244, 143, 177, 0.15);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--primary) 22%, transparent);
 }
 
 .calendar-cell.today {
@@ -639,9 +738,8 @@ a {
 
 .chip-active {
   background: var(--primary-100);
-  border-color: rgba(233, 30, 99, 0.3);
+  border-color: color-mix(in srgb, var(--primary) 35%, transparent);
   color: var(--primary);
-  box-shadow: 0 8px 16px rgba(233, 30, 99, 0.1);
 }
 
 .date-switch {
@@ -673,42 +771,30 @@ a {
   margin-top: 16px;
   padding: 10px 14px;
   border-radius: 12px;
-  background: rgba(255, 152, 0, 0.1);
+  background: var(--warn-bg);
   color: var(--text);
   font-size: 13px;
-  border: 1px solid rgba(255, 152, 0, 0.2);
+  border: 1px solid color-mix(in srgb, var(--warn) 25%, transparent);
 }
 
 .calendar-cell.phase-menstrual {
-  background: rgba(233, 30, 99, 0.12);
-  color: var(--primary);
+  background: var(--phase-menstrual-bg);
+  color: var(--phase-menstrual);
 }
 
 .calendar-cell.phase-follicular {
-  background: rgba(66, 165, 245, 0.12);
-  color: #64b5f6;
+  background: var(--phase-follicular-bg);
+  color: var(--phase-follicular);
 }
 
 .calendar-cell.phase-ovulation {
-  background: rgba(102, 187, 106, 0.14);
-  color: #66bb6a;
+  background: var(--phase-ovulation-bg);
+  color: var(--phase-ovulation);
 }
 
 .calendar-cell.phase-luteal {
-  background: rgba(171, 71, 188, 0.12);
-  color: #ce93d8;
-}
-
-.calendar-cell.predicted {
-  box-shadow: inset 0 0 0 2px rgba(244, 143, 177, 0.2);
-  color: var(--primary);
-}
-
-.calendar-cell.period {
-  background: var(--primary-100);
-  color: var(--primary);
-  font-weight: 700;
-  box-shadow: inset 0 0 0 1px rgba(244, 143, 177, 0.3);
+  background: var(--phase-luteal-bg);
+  color: var(--phase-luteal);
 }
 
 .history-list {
@@ -770,9 +856,11 @@ a {
 
 .cycle-day-number {
   font-size: 36px;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--primary);
   line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
 }
 
 .cycle-day-total {
@@ -804,7 +892,7 @@ a {
 .cycle-progress-fill {
   height: 100%;
   border-radius: 4px;
-  background: linear-gradient(90deg, var(--primary), var(--accent));
+  background: var(--primary);
   transition: width 0.5s ease;
 }
 
@@ -822,7 +910,7 @@ a {
   width: 4px;
   height: 14px;
   border-radius: 2px;
-  background: rgba(0, 0, 0, 0.15);
+  background: color-mix(in srgb, var(--text) 22%, transparent);
   transform: translateX(-50%);
 }
 
@@ -838,12 +926,12 @@ a {
 /* ===== Fertile Window Card ===== */
 
 .fertile-card {
-  border-left: 4px solid #66bb6a;
+  border-left: 4px solid var(--phase-ovulation);
 }
 
 .fertile-card-active {
-  background: linear-gradient(135deg, rgba(102, 187, 106, 0.1) 0%, var(--card) 60%);
-  border-left-color: #43a047;
+  background: var(--phase-ovulation-bg);
+  border-left-color: var(--phase-ovulation);
 }
 
 .fertile-header {
@@ -863,13 +951,13 @@ a {
 }
 
 .fertile-badge-active {
-  background: rgba(102, 187, 106, 0.15);
-  color: #66bb6a;
+  background: var(--success-bg);
+  color: var(--success);
 }
 
 .fertile-badge-upcoming {
-  background: rgba(102, 187, 106, 0.1);
-  color: #81c784;
+  background: var(--success-bg);
+  color: var(--success);
 }
 
 .fertile-badge-passed {
@@ -906,18 +994,18 @@ a {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: #a5d6a7;
+  background: color-mix(in srgb, var(--success) 55%, transparent);
 }
 
 .fertile-day-ovulation .fertile-pip-dot {
   width: 14px;
   height: 14px;
-  background: #43a047;
-  box-shadow: 0 0 0 3px rgba(67, 160, 71, 0.2);
+  background: var(--success);
+  box-shadow: 0 0 0 3px var(--success-bg);
 }
 
 .fertile-day-today .fertile-pip-dot {
-  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.35);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
 .fertile-pip-label {
@@ -939,15 +1027,15 @@ a {
 /* ===== Calendar fertile day highlights ===== */
 
 .calendar-cell.fertile {
-  background: rgba(102, 187, 106, 0.12);
-  box-shadow: inset 0 0 0 1px rgba(76, 175, 80, 0.25);
+  background: var(--phase-ovulation-bg);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--phase-ovulation) 25%, transparent);
 }
 
 .calendar-cell.fertile-ovulation {
-  background: rgba(102, 187, 106, 0.2);
-  color: #66bb6a;
+  background: var(--phase-ovulation-bg);
+  color: var(--phase-ovulation);
   font-weight: 700;
-  box-shadow: inset 0 0 0 2px rgba(67, 160, 71, 0.4);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--phase-ovulation) 45%, transparent);
 }
 
 @media (max-width: 720px) {
@@ -980,7 +1068,7 @@ a {
 }
 
 .notif-desc {
-  color: #6a6b76;
+  color: var(--muted);
   margin: 4px 0 0;
   font-size: 0.92rem;
 }
@@ -1135,7 +1223,7 @@ a {
 .log-progress-fill {
   height: 100%;
   border-radius: 3px;
-  background: linear-gradient(90deg, var(--primary), var(--accent));
+  background: var(--primary);
   transition: width 0.4s ease;
 }
 
@@ -1192,9 +1280,9 @@ a {
 .log-check {
   margin-left: auto;
   font-size: 13px;
-  color: #66bb6a;
+  color: var(--success);
   font-weight: 700;
-  background: rgba(102, 187, 106, 0.12);
+  background: var(--success-bg);
   padding: 2px 8px;
   border-radius: 999px;
 }
@@ -1228,7 +1316,7 @@ a {
   background: var(--primary-100);
   border-color: var(--primary);
   color: var(--primary);
-  box-shadow: 0 6px 16px rgba(233, 30, 99, 0.12);
+  box-shadow: 0 4px 12px rgba(43, 39, 51, 0.08);
   transform: translateY(-1px);
 }
 
@@ -1252,7 +1340,7 @@ a {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #66bb6a;
+  background: var(--success);
   animation: pulse-dot 2s ease infinite;
 }
 
@@ -1284,8 +1372,8 @@ a {
   border-radius: 10px;
   font-size: 13px;
   color: var(--text);
-  background: rgba(244, 143, 177, 0.10);
-  border: 1px dashed rgba(244, 143, 177, 0.35);
+  background: var(--primary-100);
+  border: 1px dashed color-mix(in srgb, var(--primary) 30%, transparent);
 }
 
 /* ===== Analytics page ===== */
@@ -1308,9 +1396,11 @@ a {
 
 .streak-number {
   font-size: 56px;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--primary);
   line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
 }
 
 .streak-label {
@@ -1324,8 +1414,8 @@ a {
   margin-top: 12px;
   padding: 6px 16px;
   border-radius: 999px;
-  background: rgba(102, 187, 106, 0.12);
-  color: #66bb6a;
+  background: var(--success-bg);
+  color: var(--success);
   font-weight: 600;
   font-size: 13px;
 }
@@ -1344,9 +1434,11 @@ a {
 
 .analytics-stat-value {
   font-size: 28px;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--text);
   margin-top: 4px;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Cycle chart */
@@ -1395,7 +1487,7 @@ a {
 .chart-bar {
   width: 100%;
   max-width: 40px;
-  background: linear-gradient(180deg, var(--primary), var(--accent));
+  background: var(--primary);
   border-radius: 6px 6px 0 0;
   position: relative;
   min-height: 4px;
@@ -1403,7 +1495,7 @@ a {
 }
 
 .chart-bar-warn {
-  background: linear-gradient(180deg, #ff9800, #f44336);
+  background: var(--warn);
 }
 
 .chart-bar-value {
@@ -1475,10 +1567,10 @@ a {
   border-left: 4px solid var(--border);
 }
 
-.pattern-menstrual { border-left-color: #e91e63; }
-.pattern-follicular { border-left-color: #42a5f5; }
-.pattern-ovulation { border-left-color: #66bb6a; }
-.pattern-luteal { border-left-color: #ab47bc; }
+.pattern-menstrual { border-left-color: var(--phase-menstrual); }
+.pattern-follicular { border-left-color: var(--phase-follicular); }
+.pattern-ovulation { border-left-color: var(--phase-ovulation); }
+.pattern-luteal { border-left-color: var(--phase-luteal); }
 
 .pattern-phase {
   font-weight: 700;
@@ -1536,10 +1628,10 @@ a {
   font-weight: 700;
 }
 
-.status-normal { background: rgba(102, 187, 106, 0.12); color: #66bb6a; }
-.status-long { background: rgba(255, 152, 0, 0.12); color: #ffb74d; }
-.status-short { background: rgba(66, 165, 245, 0.12); color: #64b5f6; }
-.status-warn { background: rgba(244, 143, 177, 0.12); color: #f48fb1; }
+.status-normal { background: var(--success-bg); color: var(--success); }
+.status-long { background: var(--warn-bg); color: var(--warn); }
+.status-short { background: var(--phase-follicular-bg); color: var(--phase-follicular); }
+.status-warn { background: var(--danger-bg); color: var(--danger); }
 
 /* ===== Mobile bottom nav ===== */
 
@@ -1558,7 +1650,12 @@ a {
 
   .nav-link {
     font-size: 12px;
-    padding: 6px 8px;
+    padding: 8px 10px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
   }
 
   .main {
@@ -1572,4 +1669,132 @@ a {
   .brand-badge {
     display: none;
   }
+}
+
+/* Respect the OS "reduce motion" setting (pulse dot, slide-up modals, bar transitions). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.medical-disclaimer {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
+  margin: 8px 4px 24px;
+}
+
+/* ===== Confirm dialog (native <dialog>) ===== */
+.confirm-dialog {
+  border: none;
+  padding: 0;
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  color: var(--text);
+  box-shadow: 0 24px 64px rgba(20, 18, 26, 0.32);
+  max-width: 360px;
+  width: calc(100% - 40px);
+}
+
+.confirm-dialog::backdrop {
+  background: rgba(20, 18, 26, 0.5);
+  backdrop-filter: blur(2px);
+}
+
+.confirm-dialog-inner {
+  padding: 24px;
+}
+
+.confirm-dialog-title {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.confirm-dialog-desc {
+  margin: 0 0 20px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.confirm-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.confirm-dialog[open] {
+  animation: dialog-in 0.16s ease;
+}
+
+.confirm-dialog[open]::backdrop {
+  animation: backdrop-in 0.16s ease;
+}
+
+@keyframes dialog-in {
+  from { opacity: 0; transform: translateY(6px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ===== Toggle switch (role="switch") ===== */
+.switch {
+  position: relative;
+  width: 44px;
+  height: 26px;
+  flex-shrink: 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card-alt);
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+
+.switch-on {
+  background: var(--primary-solid);
+  border-color: var(--primary-solid);
+}
+
+.switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(20, 18, 26, 0.25);
+  transition: transform 0.18s ease;
+}
+
+.switch-on .switch-thumb {
+  transform: translateX(18px);
+}
+
+.toggle-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background: var(--card-alt);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
 }

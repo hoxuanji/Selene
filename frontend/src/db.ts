@@ -50,6 +50,17 @@ export async function addPeriod(date: string): Promise<number> {
   return db.periods.add({ startDate: date });
 }
 
+/** Bulk-add period start dates, skipping any that already exist. Returns the count written. */
+export async function bulkAddPeriods(dates: string[]): Promise<number> {
+  const existing = new Set((await db.periods.toArray()).map((p) => p.startDate));
+  const toAdd = dates
+    .filter((d) => typeof d === 'string' && !existing.has(d))
+    .map((startDate) => ({ startDate }));
+  if (!toAdd.length) return 0;
+  await db.periods.bulkAdd(toAdd);
+  return toAdd.length;
+}
+
 export async function getAllPeriods(): Promise<string[]> {
   const periods = await db.periods.toArray();
   return periods
@@ -60,10 +71,6 @@ export async function getAllPeriods(): Promise<string[]> {
 
 export async function deletePeriod(id: number): Promise<void> {
   await db.periods.delete(id);
-}
-
-export async function getPeriodById(id: number): Promise<Period | undefined> {
-  return db.periods.get(id);
 }
 
 export async function getAllPeriodsWithId(): Promise<Period[]> {
@@ -92,17 +99,6 @@ export async function upsertDailyLog(log: Omit<DailyLog, 'id' | 'userId' | 'crea
   return db.daily_logs.put(payload);
 }
 
-export async function getDailyLogByDate(date: string): Promise<DailyLog | undefined> {
-  return db.daily_logs.where('date').equals(date).first();
-}
-
 export async function getAllDailyLogs(): Promise<DailyLog[]> {
   return db.daily_logs.toArray();
-}
-
-export async function getRecentDailyLogs(days: number): Promise<DailyLog[]> {
-  const since = new Date();
-  since.setDate(since.getDate() - days + 1);
-  const sinceDate = since.toISOString().split('T')[0];
-  return db.daily_logs.where('date').aboveOrEqual(sinceDate).toArray();
 }

@@ -30,7 +30,7 @@ const painOptions: { value: Pain; label: string; emoji: string }[] = [
 ];
 
 const mucusOptions: { value: Exclude<Mucus, null>; label: string; emoji: string }[] = [
-  { value: 'dry', label: 'Dry', emoji: '�' },
+  { value: 'dry', label: 'Dry', emoji: '🌵' },
   { value: 'sticky', label: 'Sticky', emoji: '🫧' },
   { value: 'creamy', label: 'Creamy', emoji: '☁️' },
   { value: 'egg_white', label: 'Egg white', emoji: '💧' }
@@ -148,7 +148,7 @@ export const DailyCheckinCard: React.FC<DailyCheckinCardProps> = ({
           onSelect={(value) => handleToggle('energy', value)}
         />
         <LogCategory
-          icon="�" title="Pain"
+          icon="🩹" title="Pain"
           field="pain"
           options={painOptions}
           value={log?.pain}

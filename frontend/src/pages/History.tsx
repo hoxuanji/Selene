@@ -1,17 +1,24 @@
 import React, { useEffect } from 'react';
 import { usePeriodStore } from '../store';
+import { useConfirm } from '../components/ConfirmDialog';
 
 export const History: React.FC = () => {
   const { periodEntries, loadPeriodsFromDB, removePeriod, error } = usePeriodStore();
+  const { confirm, dialog } = useConfirm();
 
   useEffect(() => {
     loadPeriodsFromDB();
   }, []);
 
   const handleDelete = async (entryId: number, date: string) => {
-    if (window.confirm(`Delete period on ${date}?`)) {
-      await removePeriod(entryId, date);
-    }
+    const ok = await confirm({
+      title: 'Delete this period entry?',
+      description: `This removes the entry on ${formatDate(date)}.`,
+      confirmLabel: 'Delete',
+      cancelLabel: 'Keep',
+      danger: true,
+    });
+    if (ok) await removePeriod(entryId, date);
   };
 
   const formatDate = (dateStr: string) => {
@@ -57,6 +64,8 @@ export const History: React.FC = () => {
           ))}
         </div>
       )}
+
+      {dialog}
     </div>
   );
 };

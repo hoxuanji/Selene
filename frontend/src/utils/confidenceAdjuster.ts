@@ -1,5 +1,6 @@
 import type { DailyLog } from '../db';
 import type { OvulationSignal } from './ovulationSignals';
+import { parseLocalDate, toLocalDateString } from './validation';
 
 interface ConfidenceInput {
   baseConfidence: number;
@@ -33,7 +34,9 @@ export function adjustConfidence({
   const consistentLogs = recentLogs.length >= 5;
 
   if (ovulationSignal.ovulationDetected) {
-    confidence = Math.max(confidence, 0.97);
+    // A logged ovulation signal nudges confidence up a little — it does not
+    // fabricate a 97% floor from a single self-reported mucus tap.
+    confidence = clamp(confidence + 0.04, 0.5, 0.95);
     notes.push('Ovulation confirmed from logs');
   }
 
@@ -61,17 +64,17 @@ export function adjustPredictionWindow(
   latest: string,
   windowShift: number
 ): { earliest: string; latest: string } {
-  if (!windowShift) {
+  const start = parseLocalDate(earliest);
+  const end = parseLocalDate(latest);
+  if (!windowShift || !start || !end) {
     return { earliest, latest };
   }
 
-  const start = new Date(earliest);
-  const end = new Date(latest);
   start.setDate(start.getDate() - windowShift);
   end.setDate(end.getDate() + windowShift);
 
   return {
-    earliest: start.toISOString().split('T')[0],
-    latest: end.toISOString().split('T')[0]
+    earliest: toLocalDateString(start),
+    latest: toLocalDateString(end)
   };
 }

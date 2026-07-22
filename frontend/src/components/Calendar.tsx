@@ -1,6 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import type { DailyLog } from '../db';
 import { getPhase } from '../utils/phaseEngine';
+import { parseLocalDate, toLocalDateString } from '../utils/validation';
+import { averageCycleLength as computeAverageCycleLength } from '../utils/predictor';
 
 interface CalendarProps {
   periods: string[];
@@ -26,12 +28,6 @@ export const Calendar: React.FC<CalendarProps> = ({
   onDateAction
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const toLocalDateString = (date: Date) => {
-    const year = date.getFullYear();
-    const month = `${date.getMonth() + 1}`.padStart(2, '0');
-    const day = `${date.getDate()}`.padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -41,49 +37,41 @@ export const Calendar: React.FC<CalendarProps> = ({
   const daysInMonth = lastDay.getDate();
   const startingDayOfWeek = firstDay.getDay();
 
-  const periodDates = new Set(
-    periods.map(p => new Date(p).toDateString())
-  );
+  // Stored dates are local YYYY-MM-DD, and each calendar cell is keyed by the
+  // same local string — so highlights and clicks land on the correct day in
+  // every timezone (previously new Date(str) parsed as UTC and drifted a day).
+  const periodDates = new Set(periods);
   const periodIdMap = new Map(
-    periodEntries.map(entry => [new Date(entry.startDate).toDateString(), entry.id])
+    periodEntries.map(entry => [entry.startDate, entry.id])
   );
 
   const dailyLogMap = useMemo(
-    () => new Map(dailyLogs.map((log) => [new Date(log.date).toDateString(), log])),
+    () => new Map(dailyLogs.map((log) => [log.date, log])),
     [dailyLogs]
   );
 
   const predictedDates = new Set<string>();
   if (predictedRange) {
-    const start = new Date(predictedRange.earliest);
-    const end = new Date(predictedRange.latest);
-    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      predictedDates.add(new Date(d).toDateString());
+    const start = parseLocalDate(predictedRange.earliest);
+    const end = parseLocalDate(predictedRange.latest);
+    if (start && end) {
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        predictedDates.add(toLocalDateString(d));
+      }
     }
   }
 
-  const averageCycleLength = useMemo(() => {
-    if (periods.length < 2) return null;
-    const sorted = [...periods].sort();
-    const cycles: number[] = [];
-    for (let i = 1; i < sorted.length; i += 1) {
-      const prev = new Date(sorted[i - 1]).getTime();
-      const curr = new Date(sorted[i]).getTime();
-      cycles.push(Math.round((curr - prev) / (1000 * 60 * 60 * 24)));
-    }
-    if (!cycles.length) return null;
-    return Math.round(cycles.reduce((a, b) => a + b, 0) / cycles.length);
-  }, [periods]);
+  const averageCycleLength = useMemo(
+    () => computeAverageCycleLength(periods),
+    [periods]
+  );
 
   const cycleWindow = useMemo(() => {
-    if (!lastPeriodDate) return null;
-    const start = new Date(lastPeriodDate);
-    const end = predictedRange?.latest
-      ? new Date(predictedRange.latest)
-      : averageCycleLength
-      ? new Date(new Date(lastPeriodDate).getTime())
-      : null;
-    if (end && averageCycleLength && !predictedRange?.latest) {
+    const start = parseLocalDate(lastPeriodDate ?? '');
+    if (!start) return null;
+    let end: Date | null = parseLocalDate(predictedRange?.latest ?? '');
+    if (!end && averageCycleLength) {
+      end = new Date(start);
       end.setDate(start.getDate() + averageCycleLength);
     }
     return end ? { start, end } : null;
@@ -104,10 +92,10 @@ export const Calendar: React.FC<CalendarProps> = ({
 
   for (let day = 1; day <= daysInMonth; day++) {
     const date = new Date(year, month, day);
-    const dateString = date.toDateString();
-    const isPeriod = periodDates.has(dateString);
-    const isPredicted = predictedDates.has(dateString);
-    const logForDate = dailyLogMap.get(dateString);
+    const dateISO = toLocalDateString(date);
+    const isPeriod = periodDates.has(dateISO);
+    const isPredicted = predictedDates.has(dateISO);
+    const logForDate = dailyLogMap.get(dateISO);
     const inCycleWindow =
       cycleWindow && date >= cycleWindow.start && date <= cycleWindow.end;
     const phase = inCycleWindow
@@ -120,14 +108,13 @@ export const Calendar: React.FC<CalendarProps> = ({
         })
       : null;
 
-    const entryId = periodIdMap.get(dateString);
+    const entryId = periodIdMap.get(dateISO);
     const todayDate = new Date();
     todayDate.setHours(0, 0, 0, 0);
     const cellDate = new Date(date);
     cellDate.setHours(0, 0, 0, 0);
     const isToday = date.toDateString() === new Date().toDateString();
     const isFutureDate = cellDate > todayDate;
-    const dateISO = toLocalDateString(date);
     const isFertile = fertileWindowDates.has(dateISO);
     const isFertileOvulation = dateISO === fertileOvulationDate;
     const ovulationTooltip =
@@ -199,36 +186,36 @@ export const Calendar: React.FC<CalendarProps> = ({
 
       <div className="legend" style={{ marginTop: 16 }}>
         <span>
-          <span className="legend-swatch" style={{ background: '#ffe2ea' }}></span>
-          Period Date
+          <span className="legend-swatch" style={{ background: 'color-mix(in srgb, var(--primary) 30%, var(--card))' }}></span>
+          Period date
         </span>
         <span>
-          <span className="legend-swatch" style={{ background: '#fff0f5' }}></span>
-          Predicted Range
+          <span className="legend-swatch" style={{ background: 'var(--card)', boxShadow: 'inset 0 0 0 2px color-mix(in srgb, var(--primary) 40%, transparent)' }}></span>
+          Predicted range
         </span>
         <span>
-          <span className="legend-swatch" style={{ background: '#ffd6e3' }}></span>
+          <span className="legend-swatch" style={{ background: 'color-mix(in srgb, var(--phase-menstrual) 30%, var(--card))' }}></span>
           Menstrual
         </span>
         <span>
-          <span className="legend-swatch" style={{ background: '#dfe9ff' }}></span>
+          <span className="legend-swatch" style={{ background: 'color-mix(in srgb, var(--phase-follicular) 30%, var(--card))' }}></span>
           Follicular
         </span>
         <span>
-          <span className="legend-swatch" style={{ background: '#dff7e3' }}></span>
-          Ovulation
+          <span className="legend-swatch" style={{ background: 'color-mix(in srgb, var(--phase-ovulation) 30%, var(--card))' }}></span>
+          Ovulation phase
         </span>
         <span>
-          <span className="legend-swatch" style={{ background: '#efe1ff' }}></span>
+          <span className="legend-swatch" style={{ background: 'color-mix(in srgb, var(--phase-luteal) 30%, var(--card))' }}></span>
           Luteal
         </span>
         <span>
-          <span className="legend-swatch" style={{ background: '#e8f5e9', border: '2px solid #66bb6a' }}></span>
-          Fertile
+          <span className="legend-swatch" style={{ background: 'var(--phase-ovulation-bg)', boxShadow: 'inset 0 0 0 2px color-mix(in srgb, var(--phase-ovulation) 45%, transparent)' }}></span>
+          Fertile days
         </span>
         <span>
-          <span className="legend-swatch" style={{ background: '#c8e6c9', border: '2px solid #43a047' }}></span>
-          Ovulation
+          <span className="legend-swatch" style={{ background: 'var(--phase-ovulation)' }}></span>
+          Estimated ovulation day
         </span>
         <span>Click a date to add or remove an entry</span>
       </div>

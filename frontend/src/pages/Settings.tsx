@@ -8,7 +8,8 @@ import {
   saveNotificationPrefs,
   type NotificationPrefs,
 } from '../utils/notifications';
-import { getAllPeriods, getAllDailyLogs, type DailyLog } from '../db';
+import { getAllPeriods, getAllDailyLogs, bulkAddPeriods, upsertDailyLog } from '../db';
+import { Toggle } from '../components/Toggle';
 
 export const Settings: React.FC = () => {
   const { profile, setProfile, periods, dailyLogs } = usePeriodStore();
@@ -97,18 +98,23 @@ export const Settings: React.FC = () => {
           alert('Invalid backup file: missing periods array.');
           return;
         }
-        const { addPeriodToStore, setProfile: sp } = usePeriodStore.getState();
+        const { setProfile: sp, loadPeriodsFromDB, loadDailyLogsFromDB } = usePeriodStore.getState();
         if (data.profile) sp(data.profile);
-        for (const date of data.periods) {
-          await addPeriodToStore(date);
-        }
-        if (data.dailyLogs && Array.isArray(data.dailyLogs)) {
-          const { upsertDailyLog } = usePeriodStore.getState();
+        // Bulk-write directly so a restore never loses entries or fires a
+        // prediction per date (dedupes against anything already stored).
+        const addedPeriods = await bulkAddPeriods(data.periods);
+        let addedLogs = 0;
+        if (Array.isArray(data.dailyLogs)) {
           for (const log of data.dailyLogs) {
             await upsertDailyLog(log);
+            addedLogs += 1;
           }
         }
-        alert(`Imported ${data.periods.length} periods and ${data.dailyLogs?.length || 0} daily logs.`);
+        await loadPeriodsFromDB();
+        await loadDailyLogsFromDB();
+        alert(
+          `Imported ${addedPeriods} period entr${addedPeriods === 1 ? 'y' : 'ies'} and ${addedLogs} daily log${addedLogs === 1 ? '' : 's'}.`
+        );
       } catch {
         alert('Failed to read the backup file. Make sure it is a valid Selene JSON export.');
       }
@@ -127,9 +133,9 @@ export const Settings: React.FC = () => {
 
       {/* ===== Profile ===== */}
       <div className="card settings-section" style={{ marginBottom: 16 }}>
-        <button className="settings-toggle" onClick={() => setShowProfile(!showProfile)}>
+        <button className="settings-toggle" aria-expanded={showProfile} onClick={() => setShowProfile(!showProfile)}>
           <span>👤 Profile &amp; Personalization</span>
-          <span className="toggle-arrow">{showProfile ? '▲' : '▼'}</span>
+          <span className="toggle-arrow" aria-hidden="true">{showProfile ? '▲' : '▼'}</span>
         </button>
         {showProfile && (
           <div className="settings-body">
@@ -177,45 +183,29 @@ export const Settings: React.FC = () => {
 
       {/* ===== Medical ===== */}
       <div className="card settings-section" style={{ marginBottom: 16 }}>
-        <button className="settings-toggle" onClick={() => setShowMedical(!showMedical)}>
+        <button className="settings-toggle" aria-expanded={showMedical} onClick={() => setShowMedical(!showMedical)}>
           <span>🩺 Medical &amp; Conditions</span>
-          <span className="toggle-arrow">{showMedical ? '▲' : '▼'}</span>
+          <span className="toggle-arrow" aria-hidden="true">{showMedical ? '▲' : '▼'}</span>
         </button>
         {showMedical && (
           <div className="settings-body">
             <div className="form-grid roomy">
-              <label className="form-field">
-                <span className="label-icon">🧬</span> PCOS
-                <select className="input" value={profile.pcos ? 'yes' : 'no'}
-                  onChange={(e) => setProfile({ ...profile, pcos: e.target.value === 'yes' })}>
-                  <option value="no">No</option>
-                  <option value="yes">Yes</option>
-                </select>
-              </label>
-              <label className="form-field">
-                <span className="label-icon">🧪</span> Thyroid
-                <select className="input" value={profile.thyroid ? 'yes' : 'no'}
-                  onChange={(e) => setProfile({ ...profile, thyroid: e.target.value === 'yes' })}>
-                  <option value="no">No</option>
-                  <option value="yes">Yes</option>
-                </select>
-              </label>
-              <label className="form-field">
-                <span className="label-icon">💊</span> Birth control
-                <select className="input" value={profile.birthControl ? 'yes' : 'no'}
-                  onChange={(e) => setProfile({ ...profile, birthControl: e.target.value === 'yes' })}>
-                  <option value="no">No</option>
-                  <option value="yes">Yes</option>
-                </select>
-              </label>
-              <label className="form-field">
-                <span className="label-icon">👶</span> Postpartum
-                <select className="input" value={profile.postpartum ? 'yes' : 'no'}
-                  onChange={(e) => setProfile({ ...profile, postpartum: e.target.value === 'yes' })}>
-                  <option value="no">No</option>
-                  <option value="yes">Yes</option>
-                </select>
-              </label>
+              <div className="toggle-field">
+                <span><span className="label-icon" aria-hidden="true">🧬</span> PCOS</span>
+                <Toggle checked={profile.pcos} label="PCOS" onChange={(v) => setProfile({ ...profile, pcos: v })} />
+              </div>
+              <div className="toggle-field">
+                <span><span className="label-icon" aria-hidden="true">🧪</span> Thyroid</span>
+                <Toggle checked={profile.thyroid} label="Thyroid condition" onChange={(v) => setProfile({ ...profile, thyroid: v })} />
+              </div>
+              <div className="toggle-field">
+                <span><span className="label-icon" aria-hidden="true">💊</span> Birth control</span>
+                <Toggle checked={profile.birthControl} label="Birth control" onChange={(v) => setProfile({ ...profile, birthControl: v })} />
+              </div>
+              <div className="toggle-field">
+                <span><span className="label-icon" aria-hidden="true">👶</span> Postpartum</span>
+                <Toggle checked={profile.postpartum} label="Postpartum" onChange={(v) => setProfile({ ...profile, postpartum: v })} />
+              </div>
               {profile.postpartum && (
                 <label className="form-field">
                   <span className="label-icon">🗓️</span> Postpartum (months)
@@ -225,14 +215,10 @@ export const Settings: React.FC = () => {
                     onChange={(e) => setProfile({ ...profile, postpartumMonths: e.target.value ? Number(e.target.value) : null })} />
                 </label>
               )}
-              <label className="form-field">
-                <span className="label-icon">✈️</span> Travel / timezone changes
-                <select className="input" value={profile.travelRecent ? 'yes' : 'no'}
-                  onChange={(e) => setProfile({ ...profile, travelRecent: e.target.value === 'yes' })}>
-                  <option value="no">No</option>
-                  <option value="yes">Yes</option>
-                </select>
-              </label>
+              <div className="toggle-field">
+                <span><span className="label-icon" aria-hidden="true">✈️</span> Travel / timezone changes</span>
+                <Toggle checked={profile.travelRecent} label="Recent travel or timezone changes" onChange={(v) => setProfile({ ...profile, travelRecent: v })} />
+              </div>
               <label className="form-field">
                 <span className="label-icon">😴</span> Sleep (avg hours)
                 <input className="input" type="number" min={3} max={12}
@@ -244,11 +230,11 @@ export const Settings: React.FC = () => {
         )}
       </div>
 
-      {/* ===== Cycle Bounds & Alert Tuning ===== */}
+      {/* ===== Cycle Bounds ===== */}
       <div className="card settings-section" style={{ marginBottom: 16 }}>
-        <button className="settings-toggle" onClick={() => setShowAlerts(!showAlerts)}>
-          <span>🎯 Cycle Bounds &amp; Alert Tuning</span>
-          <span className="toggle-arrow">{showAlerts ? '▲' : '▼'}</span>
+        <button className="settings-toggle" aria-expanded={showAlerts} onClick={() => setShowAlerts(!showAlerts)}>
+          <span>🎯 Cycle Bounds</span>
+          <span className="toggle-arrow" aria-hidden="true">{showAlerts ? '▲' : '▼'}</span>
         </button>
         {showAlerts && (
           <div className="settings-body">
@@ -266,12 +252,6 @@ export const Settings: React.FC = () => {
                   onChange={(e) => setProfile({ ...profile, longestCycle: e.target.value ? Number(e.target.value) : null })} />
               </label>
               <label className="form-field">
-                <span className="label-icon">🩸</span> Typical period length (days)
-                <input className="input" type="number" min={2} max={10}
-                  value={profile.typicalPeriodLength ?? ''}
-                  onChange={(e) => setProfile({ ...profile, typicalPeriodLength: e.target.value ? Number(e.target.value) : null })} />
-              </label>
-              <label className="form-field">
                 <span className="label-icon">➖</span> Typical cycle min
                 <input className="input" type="number" min={15} max={40}
                   value={profile.normalMin}
@@ -283,33 +263,9 @@ export const Settings: React.FC = () => {
                   value={profile.normalMax}
                   onChange={(e) => setProfile({ ...profile, normalMax: Number(e.target.value) })} />
               </label>
-              <label className="form-field">
-                <span className="label-icon">🎯</span> Variation allowance (days)
-                <input className="input" type="number" min={3} max={14}
-                  value={profile.variationDays}
-                  onChange={(e) => setProfile({ ...profile, variationDays: Number(e.target.value) })} />
-              </label>
-              <label className="form-field">
-                <span className="label-icon">⏱️</span> Recent window (days)
-                <input className="input" type="number" min={30} max={120}
-                  value={profile.recentWindowDays}
-                  onChange={(e) => setProfile({ ...profile, recentWindowDays: Number(e.target.value) })} />
-              </label>
-              <label className="form-field">
-                <span className="label-icon">🔔</span> Frequent entries alert
-                <input className="input" type="number" min={2} max={6}
-                  value={profile.frequentCount}
-                  onChange={(e) => setProfile({ ...profile, frequentCount: Number(e.target.value) })} />
-              </label>
-              <label className="form-field">
-                <span className="label-icon">🧭</span> Min cycles for alerts
-                <input className="input" type="number" min={2} max={8}
-                  value={profile.minCyclesForAlerts}
-                  onChange={(e) => setProfile({ ...profile, minCyclesForAlerts: Number(e.target.value) })} />
-              </label>
             </div>
             <p style={{ color: 'var(--muted)', marginTop: 12, fontSize: 13 }}>
-              These settings update alerts dynamically based on your recent history.
+              These bounds tune the “unusual cycle” alerts against your recent history.
             </p>
           </div>
         )}
@@ -317,9 +273,9 @@ export const Settings: React.FC = () => {
 
       {/* ===== Notifications ===== */}
       <div className="card settings-section" style={{ marginBottom: 16 }}>
-        <button className="settings-toggle" onClick={() => setShowNotifs(!showNotifs)}>
+        <button className="settings-toggle" aria-expanded={showNotifs} onClick={() => setShowNotifs(!showNotifs)}>
           <span>🔔 Reminder Notifications</span>
-          <span className="toggle-arrow">{showNotifs ? '▲' : '▼'}</span>
+          <span className="toggle-arrow" aria-hidden="true">{showNotifs ? '▲' : '▼'}</span>
         </button>
         {showNotifs && (
           <div className="settings-body">
@@ -381,9 +337,9 @@ export const Settings: React.FC = () => {
 
       {/* ===== Data Export / Import ===== */}
       <div className="card settings-section" style={{ marginBottom: 16 }}>
-        <button className="settings-toggle" onClick={() => setShowData(!showData)}>
+        <button className="settings-toggle" aria-expanded={showData} onClick={() => setShowData(!showData)}>
           <span>💾 Data &amp; Backup</span>
-          <span className="toggle-arrow">{showData ? '▲' : '▼'}</span>
+          <span className="toggle-arrow" aria-hidden="true">{showData ? '▲' : '▼'}</span>
         </button>
         {showData && (
           <div className="settings-body">
@@ -415,6 +371,13 @@ export const Settings: React.FC = () => {
           <ThemeToggle />
         </div>
       </div>
+
+      {/* ===== Medical disclaimer ===== */}
+      <p className="medical-disclaimer">
+        Selene is for general wellness tracking only. Predictions and fertile-window
+        estimates are informational, not a form of contraception or medical advice,
+        and can be inaccurate. Consult a healthcare provider for medical concerns.
+      </p>
     </div>
   );
 };

@@ -7,15 +7,16 @@ import {
   upsertDailyLog as upsertDailyLogDB,
   DailyLog
 } from './db';
-import axios from 'axios';
-import { API_BASE_URL } from './api';
 import { adjustConfidence, adjustPredictionWindow } from './utils/confidenceAdjuster';
 import { detectOvulationFromLogs, OvulationSignal } from './utils/ovulationSignals';
+import { predictNextPeriod, type BasePrediction } from './utils/predictor';
 import {
   getConsecutiveStreakLength,
   isFutureDate,
   isTodayOrPast,
   isWithinRange,
+  parseLocalDate,
+  toLocalDateString,
   todayLocalString
 } from './utils/validation';
 
@@ -35,10 +36,6 @@ export interface AlertProfile {
   avatar: string;
   normalMin: number;
   normalMax: number;
-  variationDays: number;
-  recentWindowDays: number;
-  frequentCount: number;
-  minCyclesForAlerts: number;
   ageGroup: 'under18' | '18-24' | '25-34' | '35-44' | '45plus';
   pcos: boolean;
   thyroid: boolean;
@@ -47,7 +44,6 @@ export interface AlertProfile {
   birthControl: boolean;
   shortestCycle: number | null;
   longestCycle: number | null;
-  typicalPeriodLength: number | null;
   travelRecent: boolean;
   sleepHours: number | null;
 }
@@ -79,10 +75,6 @@ const DEFAULT_PROFILE: AlertProfile = {
   avatar: '🌸',
   normalMin: 21,
   normalMax: 45,
-  variationDays: 7,
-  recentWindowDays: 60,
-  frequentCount: 3,
-  minCyclesForAlerts: 3,
   ageGroup: '25-34',
   pcos: false,
   thyroid: false,
@@ -91,7 +83,6 @@ const DEFAULT_PROFILE: AlertProfile = {
   birthControl: false,
   shortestCycle: null,
   longestCycle: null,
-  typicalPeriodLength: null,
   travelRecent: false,
   sleepHours: null
 };
@@ -100,31 +91,10 @@ const loadProfile = (): AlertProfile => {
   try {
     const stored = localStorage.getItem('cycle_profile');
     if (!stored) return DEFAULT_PROFILE;
-    const parsed = JSON.parse(stored) as AlertProfile;
-    if (
-      typeof parsed.userName !== 'string' ||
-      typeof parsed.avatar !== 'string' ||
-      typeof parsed.normalMin !== 'number' ||
-      typeof parsed.normalMax !== 'number' ||
-      typeof parsed.variationDays !== 'number' ||
-      typeof parsed.recentWindowDays !== 'number' ||
-      typeof parsed.frequentCount !== 'number' ||
-      typeof parsed.minCyclesForAlerts !== 'number' ||
-      typeof parsed.ageGroup !== 'string' ||
-      typeof parsed.pcos !== 'boolean' ||
-      typeof parsed.thyroid !== 'boolean' ||
-      typeof parsed.postpartum !== 'boolean' ||
-      (parsed.postpartumMonths !== null && typeof parsed.postpartumMonths !== 'number') ||
-      typeof parsed.birthControl !== 'boolean' ||
-      (parsed.shortestCycle !== null && typeof parsed.shortestCycle !== 'number') ||
-      (parsed.longestCycle !== null && typeof parsed.longestCycle !== 'number') ||
-      (parsed.typicalPeriodLength !== null && typeof parsed.typicalPeriodLength !== 'number') ||
-      typeof parsed.travelRecent !== 'boolean' ||
-      (parsed.sleepHours !== null && typeof parsed.sleepHours !== 'number')
-    ) {
-      return DEFAULT_PROFILE;
-    }
-    return parsed;
+    const parsed = JSON.parse(stored);
+    if (!parsed || typeof parsed !== 'object') return DEFAULT_PROFILE;
+    // Merge onto defaults so a new field never silently resets every setting.
+    return { ...DEFAULT_PROFILE, ...parsed };
   } catch {
     return DEFAULT_PROFILE;
   }
@@ -209,16 +179,12 @@ export const usePeriodStore = create<PeriodStore>((set, get) => ({
 
     set({ loading: true });
     try {
-      const response = await axios.post(
-        `${API_BASE_URL}/api/predict`,
-        { dates: periods }
-      );
-      const basePrediction: PredictionRange = {
-        predictedDate: response.data.predicted_date,
-        earliest: response.data.earliest,
-        latest: response.data.latest,
-        confidence: response.data.confidence
-      };
+      const basePrediction = predictNextPeriod(periods);
+      if (!basePrediction) {
+        // Not enough distinct cycles yet (e.g. only one period logged).
+        set({ predictedRange: null, error: null });
+        return;
+      }
 
       const enhanced = enhancePredictionWithLogs(basePrediction, get().dailyLogs, periods);
 
@@ -227,11 +193,8 @@ export const usePeriodStore = create<PeriodStore>((set, get) => ({
         error: null
       });
     } catch (error) {
-      console.error('Error fetching prediction:', error);
-      set({
-        predictedRange: null,
-        error: 'Prediction service is unavailable. We will keep tracking locally.'
-      });
+      console.error('Error computing prediction:', error);
+      set({ predictedRange: null, error: 'Unable to compute a prediction.' });
     } finally {
       set({ loading: false });
     }
@@ -312,7 +275,7 @@ export const usePeriodStore = create<PeriodStore>((set, get) => ({
 }));
 
 const enhancePredictionWithLogs = (
-  basePrediction: PredictionRange,
+  basePrediction: BasePrediction,
   dailyLogs: DailyLog[],
   periods: string[]
 ): PredictionRange => {
@@ -355,23 +318,19 @@ const enhancePredictionWithLogs = (
   };
 };
 
-const estimateOvulationDate = (prediction: PredictionRange, periods: string[]): string | undefined => {
-  if (!prediction?.earliest) return undefined;
-  const earliest = new Date(prediction.earliest);
-  const latest = new Date(prediction.latest);
+const estimateOvulationDate = (prediction: BasePrediction, periods: string[]): string | undefined => {
+  const earliest = parseLocalDate(prediction.earliest);
+  const latest = parseLocalDate(prediction.latest);
+  if (!earliest || !latest) return undefined;
   const midpoint = new Date((earliest.getTime() + latest.getTime()) / 2);
   midpoint.setDate(midpoint.getDate() - 14);
 
-  if (periods.length === 0) {
-    return midpoint.toISOString().split('T')[0];
-  }
-
-  const lastPeriod = new Date(periods[0]);
-  if (midpoint <= lastPeriod) {
+  const lastPeriod = periods.length ? parseLocalDate(periods[0]) : null;
+  if (lastPeriod && midpoint <= lastPeriod) {
     const fallback = new Date(lastPeriod);
     fallback.setDate(fallback.getDate() + 14);
-    return fallback.toISOString().split('T')[0];
+    return toLocalDateString(fallback);
   }
 
-  return midpoint.toISOString().split('T')[0];
+  return toLocalDateString(midpoint);
 };

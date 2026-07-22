@@ -98,7 +98,7 @@ export const Onboarding: React.FC = () => {
             <div className="card">
               <div className="badge">Welcome</div>
               <h1 style={{ margin: '16px 0 8px 0' }}>🌙 Selene</h1>
-              <p style={{ color: '#6a6b76', marginTop: 0 }}>
+              <p style={{ color: 'var(--muted)', marginTop: 0 }}>
                 A calm, data-aware space for tracking your cycle and spotting
                 patterns.
               </p>
@@ -106,19 +106,19 @@ export const Onboarding: React.FC = () => {
               <div style={{ marginTop: 24 }}>
                 <div className="card" style={{ marginBottom: 12 }}>
                   <strong>📅 Smart predictions</strong>
-                  <p style={{ margin: '6px 0 0 0', color: '#6a6b76' }}>
+                  <p style={{ margin: '6px 0 0 0', color: 'var(--muted)' }}>
                     See an estimated range for your next cycle.
                   </p>
                 </div>
                 <div className="card" style={{ marginBottom: 12 }}>
                   <strong>📊 Progress over time</strong>
-                  <p style={{ margin: '6px 0 0 0', color: '#6a6b76' }}>
+                  <p style={{ margin: '6px 0 0 0', color: 'var(--muted)' }}>
                     Build better accuracy with each entry.
                   </p>
                 </div>
                 <div className="card">
                   <strong>🔒 Private & local</strong>
-                  <p style={{ margin: '6px 0 0 0', color: '#6a6b76' }}>
+                  <p style={{ margin: '6px 0 0 0', color: 'var(--muted)' }}>
                     Your dates stay in your browser storage.
                   </p>
                 </div>
@@ -133,7 +133,7 @@ export const Onboarding: React.FC = () => {
               {step === 'initial' ? (
                 <div>
                   <h2 style={{ marginTop: 0 }}>Let’s set up your timeline</h2>
-                  <p style={{ color: '#6a6b76' }}>
+                  <p style={{ color: 'var(--muted)' }}>
                     Add your most recent period start dates so we can start
                     predicting the next one.
                   </p>
@@ -150,7 +150,7 @@ export const Onboarding: React.FC = () => {
               ) : step === 'name' ? (
                 <div>
                   <h2 style={{ marginTop: 0 }}>What should we call you?</h2>
-                  <p style={{ color: '#6a6b76' }}>
+                  <p style={{ color: 'var(--muted)' }}>
                     We’ll personalize your dashboard and alerts.
                   </p>
 
@@ -186,7 +186,7 @@ export const Onboarding: React.FC = () => {
               ) : step === 'profile' ? (
                 <div>
                   <h2 style={{ marginTop: 0 }}>Tell us a bit about you</h2>
-                  <p style={{ color: '#6a6b76' }}>
+                  <p style={{ color: 'var(--muted)' }}>
                     This helps us personalize predictions and alerts. You can always change these in Settings.
                   </p>
                   <div style={{ marginTop: 20, display: 'grid', gap: 16 }}>
@@ -248,7 +248,7 @@ export const Onboarding: React.FC = () => {
               ) : (
                 <div>
                   <h2 style={{ marginTop: 0 }}>Add your recent start dates</h2>
-                  <p style={{ color: '#6a6b76' }}>
+                  <p style={{ color: 'var(--muted)' }}>
                     Add at least 3 entries for higher confidence.
                   </p>
 
@@ -258,15 +258,14 @@ export const Onboarding: React.FC = () => {
                         <div style={{ display: 'flex', gap: 10 }}>
                           <input
                             type="date"
+                            className="input"
                             value={date}
                             max={today}
                             min={oneYearAgo}
                             onChange={(e) => handleDateChange(idx, e.target.value)}
                             style={{
                               flex: 1,
-                              padding: '10px 12px',
-                              borderRadius: 10,
-                              border: dateErrors[idx] ? '1px solid #e53935' : '1px solid #ececf3'
+                              borderColor: dateErrors[idx] ? 'var(--danger)' : 'var(--border)'
                             }}
                           />
                           {dates.length > 1 && (
@@ -279,7 +278,7 @@ export const Onboarding: React.FC = () => {
                           )}
                         </div>
                         {dateErrors[idx] && (
-                          <p style={{ color: '#e53935', fontSize: 13, margin: '4px 0 0 0' }}>
+                          <p style={{ color: 'var(--danger)', fontSize: 13, margin: '4px 0 0 0' }}>
                             {dateErrors[idx]}
                           </p>
                         )}
@@ -304,7 +303,7 @@ export const Onboarding: React.FC = () => {
                     </button>
                   </div>
 
-                  <p style={{ color: '#6a6b76', marginTop: 16 }}>
+                  <p style={{ color: 'var(--muted)', marginTop: 16 }}>
                     {trimmedDates.length} date(s) ready
                   </p>
                 </div>

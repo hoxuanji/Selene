@@ -7,12 +7,28 @@ import { PhaseInsights } from '../components/PhaseInsights';
 import { CycleDayCounter } from '../components/CycleDayCounter';
 import { FertileWindowCard, computeFertileWindow } from '../components/FertileWindow';
 import { getPhase } from '../utils/phaseEngine';
+import { useConfirm } from '../components/ConfirmDialog';
+import { averageCycleLength as computeAverageCycleLength, collapsePeriodStarts } from '../utils/predictor';
+import { parseLocalDate, todayLocalString } from '../utils/validation';
 import {
   notificationsSupported,
   getPermission,
   getNotificationPrefs,
   checkInsightNotifications,
 } from '../utils/notifications';
+
+// Alert-tuning defaults (previously user-editable knobs, now sensible constants).
+const VARIATION_DAYS = 7;
+const RECENT_WINDOW_DAYS = 60;
+const FREQUENT_COUNT = 3;
+const MIN_CYCLES_FOR_ALERTS = 3;
+
+const daysSince = (dateStr: string): number => {
+  const then = parseLocalDate(dateStr);
+  const today = parseLocalDate(todayLocalString());
+  if (!then || !today) return 0;
+  return Math.round((today.getTime() - then.getTime()) / (1000 * 60 * 60 * 24));
+};
 
 export const Dashboard: React.FC = () => {
   const {
@@ -38,36 +54,21 @@ export const Dashboard: React.FC = () => {
   const notifPrefs = getNotificationPrefs();
 
   const previousPhaseRef = useRef<string | null>(null);
-
-  const toLocalDateString = (date: Date) => {
-    const year = date.getFullYear();
-    const month = `${date.getMonth() + 1}`.padStart(2, '0');
-    const day = `${date.getDate()}`.padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
+  const { confirm, dialog } = useConfirm();
 
   const handleStartToday = async () => {
-    const today = toLocalDateString(new Date());
-    await addPeriodToStore(today);
+    await addPeriodToStore(todayLocalString());
   };
 
   const lastPeriod = useMemo(() => periods[0], [periods]);
   const lastTenDates = useMemo(() => periods.slice(0, 10), [periods]);
-  const averageCycleLength = useMemo(() => {
-    if (periods.length < 2) return null;
-    const sorted = [...periods].sort();
-    const cycles: number[] = [];
-    for (let i = 1; i < sorted.length; i += 1) {
-      const prev = new Date(sorted[i - 1]).getTime();
-      const curr = new Date(sorted[i]).getTime();
-      cycles.push(Math.round((curr - prev) / (1000 * 60 * 60 * 24)));
-    }
-    if (!cycles.length) return null;
-    return Math.round(cycles.reduce((a, b) => a + b, 0) / cycles.length);
-  }, [periods]);
+  const averageCycleLength = useMemo(
+    () => computeAverageCycleLength(periods),
+    [periods]
+  );
 
   const todayLog = useMemo(() => {
-    const today = toLocalDateString(new Date());
+    const today = todayLocalString();
     return dailyLogs.find((log) => log.date === today) ?? null;
   }, [dailyLogs]);
 
@@ -84,29 +85,25 @@ export const Dashboard: React.FC = () => {
   const needsCheckinPrompt = useMemo(() => {
     if (!dailyLogs.length) return true;
     const latestLog = dailyLogs[0];
-    const diffDays = Math.round(
-      (Date.now() - new Date(latestLog.date).getTime()) / (1000 * 60 * 60 * 24)
-    );
-    return diffDays >= 3;
+    return daysSince(latestLog.date) >= 3;
   }, [dailyLogs]);
 
   const cycleAlert = useMemo(() => {
-    if (periods.length < profile.minCyclesForAlerts) return null;
-    const sorted = [...periods].sort();
-    const recentDates = sorted.filter((date) => {
-      const daysAgo = (Date.now() - new Date(date).getTime()) / (1000 * 60 * 60 * 24);
-      return daysAgo <= profile.recentWindowDays;
-    });
-    const baseDates = recentDates.length >= 3 ? recentDates : sorted;
+    if (periods.length < MIN_CYCLES_FOR_ALERTS) return null;
+    // Collapse bleeding days into cycle starts so day-by-day logging doesn't
+    // read as a run of 1-day "cycles".
+    const starts = collapsePeriodStarts(periods);
+    const recentStarts = starts.filter((date) => daysSince(date) <= RECENT_WINDOW_DAYS);
+    const recentCount = recentStarts.filter((date) => daysSince(date) >= 0).length;
+    const baseDates = recentStarts.length >= 3 ? recentStarts : starts;
 
     const cycles: number[] = [];
     for (let i = 1; i < baseDates.length; i += 1) {
-      const prev = new Date(baseDates[i - 1]).getTime();
-      const curr = new Date(baseDates[i]).getTime();
-      const diff = Math.round((curr - prev) / (1000 * 60 * 60 * 24));
-      cycles.push(diff);
+      const prev = parseLocalDate(baseDates[i - 1])!.getTime();
+      const curr = parseLocalDate(baseDates[i])!.getTime();
+      cycles.push(Math.round((curr - prev) / (1000 * 60 * 60 * 24)));
     }
-    if (cycles.length < profile.minCyclesForAlerts - 1) return null;
+    if (cycles.length < MIN_CYCLES_FOR_ALERTS - 1) return null;
 
     const sortedCycles = [...cycles].sort((a, b) => a - b);
     const mid = Math.floor(sortedCycles.length / 2);
@@ -133,7 +130,7 @@ export const Dashboard: React.FC = () => {
 
     const dynamicVariation = Math.max(
       3,
-      profile.variationDays +
+      VARIATION_DAYS +
         ageVariationBoost +
         postpartumBoost +
         pcosBoost +
@@ -154,10 +151,10 @@ export const Dashboard: React.FC = () => {
 
     const frequentThreshold =
       profile.postpartum && profile.postpartumMonths && profile.postpartumMonths <= 6
-        ? profile.frequentCount + 1
-        : profile.frequentCount;
-    if (recentDates.length >= frequentThreshold) {
-      return `You logged ${recentDates.length} entries in the last ${profile.recentWindowDays} days. If this feels unusual, consider tracking symptoms or consulting a clinician.`;
+        ? FREQUENT_COUNT + 1
+        : FREQUENT_COUNT;
+    if (recentCount >= frequentThreshold) {
+      return `You logged ${recentCount} entries in the last ${RECENT_WINDOW_DAYS} days. If this feels unusual, consider tracking symptoms or consulting a clinician.`;
     }
 
     return null;
@@ -165,29 +162,23 @@ export const Dashboard: React.FC = () => {
 
   const skippedCycleWarning = useMemo(() => {
     if (periods.length < 2) return null;
-    const sorted = [...periods].sort();
+    const starts = collapsePeriodStarts(periods);
+    if (starts.length < 2) return null;
     const SKIPPED_THRESHOLD = 45;
 
     // Check historical gaps for any skipped cycles
     const skippedGaps: { from: string; to: string; days: number }[] = [];
-    for (let i = 1; i < sorted.length; i++) {
-      const prev = new Date(sorted[i - 1]).getTime();
-      const curr = new Date(sorted[i]).getTime();
+    for (let i = 1; i < starts.length; i++) {
+      const prev = parseLocalDate(starts[i - 1])!.getTime();
+      const curr = parseLocalDate(starts[i])!.getTime();
       const gap = Math.round((curr - prev) / (1000 * 60 * 60 * 24));
       if (gap > SKIPPED_THRESHOLD) {
-        skippedGaps.push({
-          from: sorted[i - 1],
-          to: sorted[i],
-          days: gap,
-        });
+        skippedGaps.push({ from: starts[i - 1], to: starts[i], days: gap });
       }
     }
 
-    // Check current cycle (time since last period)
-    const lastDate = sorted[sorted.length - 1];
-    const daysSinceLast = Math.round(
-      (Date.now() - new Date(lastDate).getTime()) / (1000 * 60 * 60 * 24)
-    );
+    // Check current cycle (time since last period start)
+    const daysSinceLast = daysSince(starts[starts.length - 1]);
     const currentSkipped = daysSinceLast > SKIPPED_THRESHOLD;
 
     if (!currentSkipped && skippedGaps.length === 0) return null;
@@ -249,9 +240,14 @@ export const Dashboard: React.FC = () => {
 
   const handleCalendarAction = async (date: string, entryId?: number) => {
     if (entryId) {
-      if (window.confirm(`Delete period entry on ${date}?`)) {
-        await removePeriod(entryId, date);
-      }
+      const ok = await confirm({
+        title: 'Delete this period entry?',
+        description: `This removes the entry on ${date} and updates your predictions.`,
+        confirmLabel: 'Delete',
+        cancelLabel: 'Keep',
+        danger: true,
+      });
+      if (ok) await removePeriod(entryId, date);
       return;
     }
     await addPeriodToStore(date);
@@ -269,9 +265,9 @@ export const Dashboard: React.FC = () => {
         </button>
       </div>
 
-      {error && <div className="alert">⚠️ {error}</div>}
+      {error && <div className="alert alert-warn">⚠️ {error}</div>}
       {needsCheckinPrompt && (
-        <div className="alert" style={{ justifyContent: 'space-between' }}>
+        <div className="alert alert-info" style={{ justifyContent: 'space-between' }}>
           <span>Quick check-in? Takes 10 seconds.</span>
           <Link className="btn btn-ghost" to="/daily-log">
             Log now
@@ -280,17 +276,17 @@ export const Dashboard: React.FC = () => {
       )}
       {cycleAlert && <div className="alert">🧠 {cycleAlert}</div>}
       {skippedCycleWarning && (
-        <div className="alert" style={{ background: '#fce4ec', border: '1px solid #ef9a9a', flexDirection: 'column', alignItems: 'flex-start', gap: 8 }}>
-          <strong style={{ color: '#b71c1c' }}>🚨 Possible skipped cycle detected</strong>
+        <div className="alert alert-danger" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 8 }}>
+          <strong>🚨 Possible skipped cycle detected</strong>
           {skippedCycleWarning.currentSkipped && (
-            <p style={{ margin: 0, color: '#c62828', fontSize: 14 }}>
+            <p style={{ margin: 0, fontSize: 14 }}>
               It has been <strong>{skippedCycleWarning.daysSinceLast} days</strong> since your last logged period.
               A gap longer than 45 days could indicate <strong>pregnancy</strong>, significant hormonal changes
               (e.g. PCOS, thyroid issues), or other medical conditions.
             </p>
           )}
           {skippedCycleWarning.skippedGaps.length > 0 && (
-            <div style={{ fontSize: 13, color: '#c62828' }}>
+            <div style={{ fontSize: 13 }}>
               <p style={{ margin: '4px 0' }}>
                 <strong>{skippedCycleWarning.skippedGaps.length} past gap{skippedCycleWarning.skippedGaps.length > 1 ? 's' : ''}</strong> longer than 45 days found in your history:
               </p>
@@ -306,7 +302,7 @@ export const Dashboard: React.FC = () => {
               </ul>
             </div>
           )}
-          <p style={{ margin: '4px 0 0', color: '#6a6b76', fontSize: 13 }}>
+          <p style={{ margin: '4px 0 0', fontSize: 13, opacity: 0.8 }}>
             If this is unexpected, consider taking a pregnancy test or consulting a healthcare provider.
           </p>
         </div>
@@ -332,7 +328,7 @@ export const Dashboard: React.FC = () => {
           <h2 style={{ margin: 0 }}>
             {lastPeriod ? new Date(lastPeriod).toDateString() : 'No entries yet'}
           </h2>
-          <p style={{ color: '#6a6b76', marginTop: 12 }}>
+          <p style={{ color: 'var(--muted)', marginTop: 12 }}>
             Add more dates to improve your prediction accuracy.
           </p>
         </div>
@@ -392,6 +388,7 @@ export const Dashboard: React.FC = () => {
         </div>
       </div>
 
+      {dialog}
     </div>
   );
 };
